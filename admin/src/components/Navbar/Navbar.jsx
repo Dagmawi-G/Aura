@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import "./Navbar.css";
 import axios from "axios";
+import { StoreContext } from "../../context/StoreContext";
 
 const Navbar = ({ url }) => {
+  const { adminUser, logout } = useContext(StoreContext);
   const [pendingCount, setPendingCount] = useState(0);
   const location = useLocation();
 
@@ -26,6 +28,10 @@ const Navbar = ({ url }) => {
     const interval = setInterval(fetchPendingOrders, 10000); // live polling for orders
     return () => clearInterval(interval);
   }, [url]);
+
+  const initials = adminUser?.name
+    ? adminUser.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "AD";
 
   return (
     <header className="admin-navbar">
@@ -105,10 +111,51 @@ const Navbar = ({ url }) => {
             </svg>
             <span>Settings</span>
           </NavLink>
+
+          <NavLink
+            to="/admins"
+            className={({ isActive }) =>
+              isActive ? "admin-nav-item active" : "admin-nav-item"
+            }
+          >
+            <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>Admins</span>
+          </NavLink>
         </nav>
+
+        {/* Right side user profile & logout */}
+        <div className="admin-nav-user-section">
+          <div className="admin-profile-pill" title={adminUser?.email || "Admin"}>
+            <div className="nav-avatar">{initials}</div>
+            <div className="nav-user-text">
+              <strong className="nav-user-name">{adminUser?.name || "Admin"}</strong>
+              <span className="nav-user-role">Administrator</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn-admin-logout"
+            onClick={logout}
+            title="Sign out of Admin Panel"
+          >
+            <svg className="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span className="logout-text">Logout</span>
+          </button>
+        </div>
       </div>
     </header>
   );
 };
 
 export default Navbar;
+

@@ -6,6 +6,7 @@ import userRouter from "./routes/userRoute.js";
 import settingRouter from "./routes/settingRoute.js";
 import stickerRouter from "./routes/stickerRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import { ensureDefaultAdmin } from "./controllers/userController.js";
 import "dotenv/config";
 
 // App config
@@ -17,8 +18,10 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cors());
 
-// DB connection
-connectDB();
+// DB connection & default super admin setup
+connectDB().then(() => {
+  ensureDefaultAdmin();
+});
 
 // API endpoints
 app.use("/api/food", foodRouter);

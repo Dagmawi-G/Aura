@@ -1,16 +1,40 @@
-import React from "react";
+import React, { useContext } from "react";
 import Navbar from "./components/Navbar/Navbar";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import List from "./pages/List/List";
 import Orders from "./pages/Orders/Orders";
 import OrderDetail from "./pages/Orders/OrderDetail";
 import Stickers from "./pages/Stickers/Stickers";
 import Settings from "./pages/Settings/Settings";
+import Admins from "./pages/Admins/Admins";
+import Login from "./pages/Login/Login";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { StoreContext } from "./context/StoreContext";
 
 const App = () => {
   const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const { token } = useContext(StoreContext);
+
+  if (!token) {
+    return (
+      <>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
+        <Login url={url} />
+      </>
+    );
+  }
 
   return (
     <div className="admin-layout">
@@ -34,6 +58,8 @@ const App = () => {
           <Route path="/orders/:orderId" element={<OrderDetail url={url} />} />
           <Route path="/stickers" element={<Stickers url={url} />} />
           <Route path="/settings" element={<Settings url={url} />} />
+          <Route path="/admins" element={<Admins url={url} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
@@ -41,3 +67,4 @@ const App = () => {
 };
 
 export default App;
+

@@ -9,6 +9,6 @@ const foodSchema = new mongoose.Schema({
   stickers: [{ type: String }], // IDs or names of attached stickers
 }, { timestamps: true });
 
-const foodModel = mongoose.models.food || mongoose.model("food", foodSchema);
+const foodModel = mongoose.models.item || mongoose.models.items || mongoose.model("item", foodSchema, "items");
 
 export default foodModel;

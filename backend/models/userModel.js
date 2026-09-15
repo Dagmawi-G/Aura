@@ -5,11 +5,14 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, default:"user" },
+    role: { type: String, default: "admin" },
     cartData: { type: Object, default: {} },
   },
-  { minimize: false }
+  { timestamps: true, minimize: false }
 );
 
-const userModel = mongoose.model.user || mongoose.model("user", userSchema);
+const userModel =
+  mongoose.models.user || mongoose.model("user", userSchema, "users");
+
 export default userModel;
+
