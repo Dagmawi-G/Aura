@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+      <defs>
+        <linearGradient id="butterflyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#06B6D4" />
+          <stop offset="100%" stop-color="#6366F1" />
+        </linearGradient>
+      </defs>
+      <path d="M50,50 Q25,15 10,35 Q5,55 35,65 Q50,70 50,50" fill="url(#butterflyGrad)" opacity="0.9"/>
+      <path d="M50,50 Q75,15 90,35 Q95,55 65,65 Q50,70 50,50" fill="url(#butterflyGrad)" opacity="0.9"/>
+      <path d="M50,50 Q30,70 20,85 Q40,95 50,65" fill="#3B82F6" opacity="0.8"/>
+      <path d="M50,50 Q70,70 80,85 Q60,95 50,65" fill="#3B82F6" opacity="0.8"/>
+      <line x1="50" y1="30" x2="50" y2="75" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+      <line x1="50" y1="30" x2="42" y2="18" stroke="#1E293B" stroke-width="2" stroke-linecap="round"/>
+      <line x1="50" y1="30" x2="58" y2="18" stroke="#1E293B" stroke-width="2" stroke-linecap="round"/>
+    </svg>

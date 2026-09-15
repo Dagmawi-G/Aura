@@ -1,13 +1,17 @@
 import express from "express";
-import authMiddleware from "../middleware/auth.js";
-import { listOrders, placeOrder, updateStatus, userOrders, verifyOrder } from "../controllers/orderController.js";
+import {
+  submitGuestOrder,
+  listOrders,
+  updateStatus,
+  trackOrder
+} from "../controllers/orderController.js";
+import { upload } from "../middleware/multerConfig.js";
 
 const orderRouter = express.Router();
 
-orderRouter.post("/place",authMiddleware,placeOrder);
-orderRouter.post("/verify",verifyOrder);
-orderRouter.post("/status",authMiddleware,updateStatus);
-orderRouter.post("/userorders",authMiddleware,userOrders);
-orderRouter.get("/list",authMiddleware,listOrders);
+orderRouter.post("/submit", upload.single("paymentProof"), submitGuestOrder);
+orderRouter.get("/list", listOrders);
+orderRouter.post("/status", updateStatus);
+orderRouter.get("/track/:query", trackOrder);
 
 export default orderRouter;

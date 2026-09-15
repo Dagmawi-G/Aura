@@ -3,30 +3,33 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import foodRouter from "./routes/foodRoute.js";
 import userRouter from "./routes/userRoute.js";
-import "dotenv/config";
-import cartRouter from "./routes/cartRoute.js";
+import settingRouter from "./routes/settingRoute.js";
+import stickerRouter from "./routes/stickerRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import "dotenv/config";
 
-// app config
+// App config
 const app = express();
-const port =process.env.PORT || 4000;
+const port = process.env.PORT || 4000;
 
-//middlewares
-app.use(express.json());
+// Middlewares
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cors());
 
 // DB connection
 connectDB();
 
-// api endpoints
+// API endpoints
 app.use("/api/food", foodRouter);
 app.use("/images", express.static("uploads"));
-app.use("/api/user", userRouter);
-app.use("/api/cart", cartRouter);
+app.use("/api/setting", settingRouter);
+app.use("/api/sticker", stickerRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/user", userRouter);
 
 app.get("/", (req, res) => {
-  res.send("API Working");
+  res.send("Aura Collection API Working");
 });
 
 app.listen(port, () => {

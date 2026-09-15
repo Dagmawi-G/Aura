@@ -1,42 +1,284 @@
-.order-item{
-    display: grid;
-    grid-template-columns: 0.5fr 2fr 1fr 1fr 1fr;
-    align-items: start;
-    gap: 30px;
-    border: 1px solid tomato;
-    padding: 20px;
-    margin: 30px 0px;
-    font-size: 14px;
-    color: #505050;
+/* ── Orders Page ── */
+.orders-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
-.order-item-food, .order-item-name{
-    font-weight: 600;
+
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
 }
-.order-item-name{
-    margin-top: 30px;
-    margin-bottom: 5px;
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition);
 }
-.order-item-address{
-    margin-bottom: 10px;
+
+.btn-refresh:hover { background: var(--surface-subtle); }
+
+/* Filter bar */
+.orders-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.order-item select{
-    background-color: #ffe8e4;
-    border: 1px solid tomato;
-    width: max(11vw,120px);
-    padding: 10px;
-    outline: none;
+
+.orders-filter-bar::-webkit-scrollbar { display: none; }
+
+.order-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
 }
-@media (max-width:1000px) {
-    .order-item{
-        font-size: 12px;
-        grid-template-columns: 0.5fr 2fr 1fr;
-        padding: 15px 8px;
-    }
-    .order-item select{
-        padding: 5px;
-        font-size: 12px;
-    }
-    .order-item img{
-        width: 40px;
-    }
+
+.order-filter-pill:hover { background: #e2e8f0; color: var(--text-main); }
+
+.order-filter-pill.active {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.pill-count {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.order-filter-pill:not(.active) .pill-count {
+  background: #cbd5e1;
+  color: var(--text-main);
+}
+
+/* ── Compact Order Cards ── */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.order-card-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.order-card-compact:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+
+.order-card-compact:active {
+  transform: translateY(0);
+}
+
+/* Left: identity */
+.compact-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 160px;
+}
+
+.compact-order-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: #e2e8f0;
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #cbd5e1;
+  width: fit-content;
+}
+
+.compact-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.compact-phone {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Center: meta */
+.compact-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 110px;
+}
+
+.compact-items-count {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Fulfillment badges */
+.fulfillment-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.fulfillment-badge.delivery {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.fulfillment-badge.pickup {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* Financial overview in list */
+.compact-financials {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 125px;
+}
+
+.compact-prepay-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.compact-prepay-badge strong {
+  font-weight: 800;
+}
+
+.compact-total-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Right: status + date */
+.compact-status-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.compact-date {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Arrow */
+.compact-arrow {
+  color: #94a3b8;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.order-card-compact:hover .compact-arrow {
+  color: #475569;
+  transform: translateX(3px);
+}
+
+/* Status pills (reused in compact + detail) */
+.status-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-pill.pending    { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.status-pill.verified   { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-pill.processing { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+.status-pill.delivery   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.status-pill.completed  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-pill.cancelled  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* Empty state */
+.empty-orders-card {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .order-card-compact {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .compact-main { min-width: unset; width: 100%; }
+  .compact-meta { flex-direction: row; align-items: center; }
+  .compact-status-side { flex-direction: row; align-items: center; margin-left: 0; }
+  .compact-arrow { margin-left: auto; }
 }

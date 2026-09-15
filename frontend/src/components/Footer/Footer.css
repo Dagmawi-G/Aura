@@ -1,60 +1,168 @@
-.footer {
-  color: #d9d9d9;
-  background-color: #323232;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 8vw;
-  padding-top: 80px;
-  margin-top: 100px;
-}
-.footer-content {
+.aura-footer {
+  background: #1c1917;
+  color: #d6d3d1;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4rem;
+  padding: 3.5rem 1.5rem 2rem;
   width: 100%;
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 80px;
 }
-.footer-content-left,
-.footer-content-center,
-.footer-content-right {
+
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr;
+  gap: 3rem;
+}
+
+.footer-brand-col,
+.footer-nav-col,
+.footer-payments-col {
   display: flex;
   flex-direction: column;
-  align-items: start;
-  gap: 20px;
+  gap: 1rem;
 }
-.footer-content-left li,
-.footer-content-center li,
-.footer-content-right li {
+
+.footer-brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-crest {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: #0c0a09;
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  flex-shrink: 0;
+}
+
+.footer-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.footer-brand-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fbbf24;
+}
+
+.footer-desc {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #a8a29e;
+  max-width: 440px;
+}
+
+.footer-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.footer-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.footer-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.footer-links-list {
   list-style: none;
-  margin-bottom: 10px;
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0;
 }
 
-.footer-content-center h2,
-.footer-content-right h2 {
-  color: white;
+.footer-links-list a {
+  font-size: 0.85rem;
+  color: #a8a29e;
+  transition: var(--transition);
 }
 
-.footer-social-icons img{
-    width: 40px;
-    margin-right: 15px;
+.footer-links-list a:hover {
+  color: #ffffff;
+  padding-left: 4px;
 }
 
-.footer hr{
-    width: 100%;
-    height: 2px;
-    margin: 20px 0px;
-    background-color: gray;
-    border: none;
+.footer-support-note {
+  font-size: 0.8rem;
+  color: #a8a29e;
+  line-height: 1.4;
 }
-@media (max-width:750px) {
-  .footer-content{
-    display: flex;
-    flex-direction: column;
-    gap: 35px;
+
+.payment-providers-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pm-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #292524;
+  color: #e7e5e4;
+  border: 1px solid #44403c;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.footer-address-text {
+  font-size: 0.78rem;
+  color: #a8a29e;
+  margin-top: 0.25rem;
+}
+
+.footer-bottom-bar {
+  max-width: 1280px;
+  margin: 2.5rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.footer-copyright {
+  font-size: 0.78rem;
+  color: #78716c;
+}
+
+@media (max-width: 860px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
   }
-  .footer-copyright{
-    text-align: center;
+  .aura-footer {
+    padding: 2.5rem 1rem calc(5rem + env(safe-area-inset-bottom, 0px));
+    margin-top: 3rem;
   }
 }
