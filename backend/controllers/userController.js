@@ -23,7 +23,25 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.json({ success: false, message: "User doesn't exist" });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch {
+      isMatch = false;
+    }
+
+    // Fallback: If password was stored plaintext, match directly and auto-upgrade to bcrypt hash
+    if (!isMatch && user.password === password) {
+      isMatch = true;
+      try {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        await user.save();
+      } catch (err) {
+        console.error("Auto-hash error:", err);
+      }
+    }
+
     if (!isMatch) {
       return res.json({ success: false, message: "Invalid credentials" });
     }
@@ -101,7 +119,25 @@ const adminLogin = async (req, res) => {
       return res.status(401).json({ success: false, message: "Account not found in users table" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch {
+      isMatch = false;
+    }
+
+    // Fallback: If password was stored plaintext, match directly and auto-upgrade to bcrypt hash
+    if (!isMatch && user.password === password) {
+      isMatch = true;
+      try {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        await user.save();
+      } catch (err) {
+        console.error("Auto-hash error:", err);
+      }
+    }
+
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
