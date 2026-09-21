@@ -176,6 +176,13 @@ const StoreContextProvider = (props) => {
     fetchFoodList();
     fetchStickers();
     fetchSettings();
+
+    // Periodic client-side keep-alive ping every 8 minutes while browsing
+    const pingInterval = setInterval(() => {
+      axios.get(`${url}/api/ping`).catch(() => {});
+    }, 8 * 60 * 1000);
+
+    return () => clearInterval(pingInterval);
   }, []);
 
   // Add customized item to cart (enforcing single delivery location per cart)

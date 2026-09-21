@@ -1,11 +1,23 @@
 import { createContext, useEffect, useState } from "react";
+import axios from "axios";
 
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
+  const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
   const [token, setToken] = useState(() => {
     return localStorage.getItem("aura_admin_token") || localStorage.getItem("token") || "";
   });
+
+  useEffect(() => {
+    // Keep Render backend awake while admin dashboard is open
+    const ping = () => {
+      axios.get(`${url}/api/ping`).catch(() => {});
+    };
+    ping();
+    const interval = setInterval(ping, 8 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [url]);
 
   const [adminUser, setAdminUser] = useState(() => {
     try {

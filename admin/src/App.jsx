@@ -54,8 +54,12 @@ const App = () => {
       <main className="admin-main-content">
         <Routes>
           <Route path="/" element={<List url={url} />} />
+          <Route path="/items" element={<List url={url} />} />
+          <Route path="/list" element={<List url={url} />} />
           <Route path="/orders" element={<Orders url={url} />} />
+          <Route path="/order" element={<Navigate to="/orders" replace />} />
           <Route path="/orders/:orderId" element={<OrderDetail url={url} />} />
+          <Route path="/order/:orderId" element={<OrderDetail url={url} />} />
           <Route path="/stickers" element={<Stickers url={url} />} />
           <Route path="/settings" element={<Settings url={url} />} />
           <Route path="/admins" element={<Admins url={url} />} />
