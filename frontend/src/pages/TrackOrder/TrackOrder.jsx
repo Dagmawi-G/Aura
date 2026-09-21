@@ -8,10 +8,14 @@ import { toast } from "react-toastify";
 const TrackOrder = () => {
   const { url, settings } = useContext(StoreContext);
   const [searchParams] = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("query") || "");
+  const [query, setQuery] = useState(() => {
+    return searchParams.get("query") || localStorage.getItem("aura_last_order") || "";
+  });
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  const lastOrderNumber = localStorage.getItem("aura_last_order");
 
   const handleTrack = async (searchVal) => {
     const q = (searchVal !== undefined ? searchVal : query).trim();
@@ -43,10 +47,10 @@ const TrackOrder = () => {
   };
 
   useEffect(() => {
-    const initialQuery = searchParams.get("query");
-    if (initialQuery) {
-      setQuery(initialQuery);
-      handleTrack(initialQuery);
+    const targetQuery = searchParams.get("query") || localStorage.getItem("aura_last_order");
+    if (targetQuery) {
+      setQuery(targetQuery);
+      handleTrack(targetQuery);
     }
   }, [searchParams]);
 
@@ -96,6 +100,22 @@ const TrackOrder = () => {
             {loading ? "Searching..." : "Track Status"}
           </button>
         </form>
+
+        {lastOrderNumber && !searched && (
+          <div className="track-recent-chip-wrap">
+            <span className="recent-chip-label">Recent Order:</span>
+            <button
+              type="button"
+              className="recent-order-chip"
+              onClick={() => {
+                setQuery(lastOrderNumber);
+                handleTrack(lastOrderNumber);
+              }}
+            >
+              ⚡ Track {lastOrderNumber}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Results */}
@@ -109,6 +129,26 @@ const TrackOrder = () => {
           <div className="not-found-icon">🔍</div>
           <h3>No Orders Found</h3>
           <p>We couldn't find an order matching "{query}". Please check your order reference number or contact us.</p>
+        </div>
+      ) : !searched && orders.length === 0 ? (
+        <div className="track-empty-guide aura-glass">
+          <div className="guide-steps-row">
+            <div className="guide-step">
+              <span className="guide-icon">🧾</span>
+              <h4>1. Find Reference</h4>
+              <p>Check the receipt displayed after placing your order or your SMS/notes.</p>
+            </div>
+            <div className="guide-step">
+              <span className="guide-icon">🔍</span>
+              <h4>2. Enter & Search</h4>
+              <p>Type your <code>AUR-XXXXXX</code> code or customer phone number above.</p>
+            </div>
+            <div className="guide-step">
+              <span className="guide-icon">🚚</span>
+              <h4>3. Live Updates</h4>
+              <p>See proof verification, printing queue, and driver delivery in real time.</p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="tracked-orders-list">

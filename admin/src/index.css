@@ -228,6 +228,33 @@ input, textarea, select {
   border: 1px solid #fecaca;
 }
 
+/* Global Loading State & Spinner */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  width: 100%;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Mobile responsive container adjustments */
 @media (max-width: 768px) {
   .admin-main-content {
