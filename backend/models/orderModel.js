@@ -13,6 +13,8 @@ const orderSchema = new mongoose.Schema({
   },
   distanceKm: { type: Number, default: 0 },
   deliveryFee: { type: Number, default: 0 },
+  isUrgent: { type: Boolean, default: false }, // Same-day urgent order flag
+  urgentFee: { type: Number, default: 0 },     // Urgent surcharge fee applied
   items: [{
     foodId: { type: String },
     name: { type: String, required: true },
@@ -46,6 +48,7 @@ const orderSchema = new mongoose.Schema({
     default: "Pending Verification" 
   },
   notes: { type: String, default: "" },
+  deliveryDate: { type: String, default: "" }, // Preferred / needed by date (YYYY-MM-DD)
   date: { type: Date, default: Date.now }
 }, { timestamps: true });
 

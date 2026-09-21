@@ -48,7 +48,7 @@
 
 .btn-track-submit {
   padding: 0.7rem 1.4rem;
-  background: #1c1917;
+  background: var(--primary);
   color: #ffffff;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
@@ -59,7 +59,7 @@
 }
 
 .btn-track-submit:hover {
-  background: #000000;
+  background: #26140a;
 }
 
 .track-loading {

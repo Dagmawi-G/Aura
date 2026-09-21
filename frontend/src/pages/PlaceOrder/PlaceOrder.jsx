@@ -25,8 +25,10 @@ const PlaceOrder = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [isUrgent, setIsUrgent] = useState(false);
 
   // Payment Selection & Proof Upload
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
@@ -42,8 +44,20 @@ const PlaceOrder = () => {
 
   const subtotal = getCartSubtotal();
   const deliveryFee = getCartDeliveryFee();
-  const total = getTotalCartAmount();
+  const configuredUrgentFee = settings.urgentFee !== undefined ? settings.urgentFee : 100;
+  const urgentFee = isUrgent ? configuredUrgentFee : 0;
+  const total = subtotal + deliveryFee + urgentFee;
   const totalItemCount = getTotalItemCount ? getTotalItemCount() : cartItems.reduce((s, i) => s + i.quantity, 0);
+
+  // When toggling urgent order, auto-set date to today
+  const handleUrgentToggle = (checked) => {
+    setIsUrgent(checked);
+    if (checked) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      setDeliveryDate(todayStr);
+      toast.info(`⚡ Urgent Same-Day Order enabled (+${configuredUrgentFee} ${settings.currency})`);
+    }
+  };
 
   // Minimum required prepayment deposit (per item or configured default, capped at total)
   const minDeposit = Math.min(
@@ -132,6 +146,11 @@ const PlaceOrder = () => {
       return;
     }
 
+    if (!deliveryDate) {
+      toast.error(`Please select your preferred ${deliveryType === "Pickup" ? "pickup" : "delivery"} date`);
+      return;
+    }
+
     if (deliveryType === "Delivery" && !deliveryAddress.trim()) {
       toast.error("Please provide your delivery address or area");
       return;
@@ -149,9 +168,12 @@ const PlaceOrder = () => {
       formData.append("customerPhone", customerPhone.trim());
       formData.append("customerEmail", customerEmail.trim());
       formData.append("deliveryType", deliveryType);
+      formData.append("deliveryDate", deliveryDate);
       formData.append("deliveryAddress", deliveryAddress.trim());
       formData.append("distanceKm", cartDeliveryInfo?.distanceKm || cartItems[0]?.distanceKm || 0);
       formData.append("deliveryFee", deliveryFee);
+      formData.append("isUrgent", isUrgent);
+      formData.append("urgentFee", urgentFee);
       formData.append("subtotal", subtotal);
       formData.append("totalAmount", total);
       formData.append("prepaymentAmount", effectivePrepayment);
@@ -179,6 +201,9 @@ const PlaceOrder = () => {
 
   // If order was successfully placed, render Order Confirmation
   if (submittedOrder) {
+    const isSubmittedUrgent = submittedOrder.isUrgent;
+    const storeContactPhone = settings.storePhone || "+251 911 223 344";
+
     return (
       <div className="order-success-view aura-glass fade-in">
         <div className="success-badge-icon">🎉</div>
@@ -187,11 +212,26 @@ const PlaceOrder = () => {
           Your payment screenshot has been attached and submitted for verification & custom printing.
         </p>
 
+        {/* Urgent Call-To-Action Banner */}
+        {isSubmittedUrgent && (
+          <div className="urgent-receipt-banner">
+            <div className="urgent-badge-pill">⚡ URGENT SAME-DAY ORDER</div>
+            <h3 className="urgent-alert-title">🚨 Call Seller to Fast-Track Your Order!</h3>
+            <p className="urgent-alert-text">
+              Because you requested an <strong>Urgent Same-Day Order</strong>, please call the seller immediately with Order ID <strong>#{submittedOrder.orderNumber}</strong> so production and dispatch start without delay!
+            </p>
+            <a href={`tel:${storeContactPhone.replace(/\s+/g, '')}`} className="btn-call-seller-urgent">
+              📞 Call Seller Now ({storeContactPhone})
+            </a>
+          </div>
+        )}
+
         <div className="order-receipt-card">
           <div className="receipt-header">
             <span className="receipt-label">Order Reference</span>
             <div className="receipt-order-id-wrap">
               <strong className="receipt-order-id">{submittedOrder.orderNumber}</strong>
+              {isSubmittedUrgent && <span className="urgent-tag-small">⚡ Urgent</span>}
               <button
                 type="button"
                 className="btn-copy-receipt-ref"
@@ -215,6 +255,14 @@ const PlaceOrder = () => {
               <span className="meta-label">Fulfillment</span>
               <strong className="meta-val">{submittedOrder.deliveryType}</strong>
             </div>
+            {submittedOrder.deliveryDate && (
+              <div className="receipt-meta-item">
+                <span className="meta-label">Target Date</span>
+                <strong className="meta-val highlight" style={{ color: isSubmittedUrgent ? "#b45309" : "#d97706" }}>
+                  {isSubmittedUrgent ? "⚡ Today (Same-Day Express)" : `📅 ${submittedOrder.deliveryDate}`}
+                </strong>
+              </div>
+            )}
             <div className="receipt-meta-item">
               <span className="meta-label">Total Amount</span>
               <strong className="meta-val">
@@ -249,6 +297,14 @@ const PlaceOrder = () => {
                 <span>{item.price * item.quantity} {settings.currency}</span>
               </div>
             ))}
+            {isSubmittedUrgent && (
+              <div className="receipt-item-row urgent-item-row">
+                <div className="receipt-item-left">
+                  <strong>⚡ Urgent Same-Day Express Surcharge</strong>
+                </div>
+                <span>+{submittedOrder.urgentFee || configuredUrgentFee} {settings.currency}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -282,6 +338,7 @@ const PlaceOrder = () => {
   }
 
   const activePaymentMethods = (settings.paymentMethods || []).filter((pm) => pm.active);
+  const storePhoneDisplay = settings.storePhone || "+251 911 223 344";
 
   return (
     <div className="place-order-page fade-in">
@@ -296,7 +353,7 @@ const PlaceOrder = () => {
         {/* Left Column: Customer & Delivery Info */}
         <div className="checkout-left-col">
           <div className="checkout-section-card aura-glass">
-            <h2 className="section-card-title">👤 1. Customer Information</h2>
+            <h2 className="section-card-title">👤 1. Customer & Delivery Information</h2>
             <div className="form-fields-group">
               <div className="form-group">
                 <label className="form-label">Full Name <span className="label-req">*</span></label>
@@ -337,19 +394,94 @@ const PlaceOrder = () => {
                 </div>
               </div>
 
-              {deliveryType === "Delivery" && (
+              {/* ⚡ Urgent Same-Day Order Toggle Card */}
+              <div className={`urgent-order-card ${isUrgent ? "active" : ""}`}>
+                <div className="urgent-toggle-top">
+                  <label className="urgent-checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="urgent-checkbox-input"
+                      checked={isUrgent}
+                      onChange={(e) => handleUrgentToggle(e.target.checked)}
+                    />
+                    <div className="urgent-checkbox-custom">
+                      {isUrgent && <span>✓</span>}
+                    </div>
+                    <div className="urgent-label-text">
+                      <div className="urgent-title-row">
+                        <span className="urgent-bolt-icon">⚡</span>
+                        <strong className="urgent-title">Urgent Order (Same-Day Express)</strong>
+                        <span className="urgent-fee-tag">+{configuredUrgentFee} {settings.currency}</span>
+                      </div>
+                      <p className="urgent-subtext">
+                        Need it done and delivered today? Priority queue printing & express same-day dispatch.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Important recommendation to call seller */}
+                {isUrgent && (
+                  <div className="urgent-call-recommendation">
+                    <div className="rec-header">
+                      <span className="rec-icon">📞</span>
+                      <strong className="rec-title">Please Call to Notify the Seller:</strong>
+                    </div>
+                    <p className="rec-body">
+                      For guaranteed same-day delivery, please call or WhatsApp the seller directly at{" "}
+                      <a href={`tel:${storePhoneDisplay.replace(/\s+/g, '')}`} className="rec-phone-link">
+                        <strong>{storePhoneDisplay}</strong>
+                      </a>{" "}
+                      after submitting this order to fast-track your priority preparation!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Delivery Address / Drop-off Details <span className="label-req">*</span></label>
+                  <label className="form-label">
+                    📅 {deliveryType === "Pickup" ? "Needed / Pickup Date" : "Preferred Delivery Date"} <span className="label-req">*</span>
+                  </label>
                   <input
-                    type="text"
+                    type="date"
                     className="form-input"
-                    placeholder="e.g. Bole Medhanialem, next to Edna Mall, House #142"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    disabled={isUrgent}
                     required
                   />
+                  {isUrgent && (
+                    <span className="urgent-date-hint">⚡ Locked to Today for Same-Day fulfillment</span>
+                  )}
                 </div>
-              )}
+
+                {deliveryType === "Delivery" ? (
+                  <div className="form-group">
+                    <label className="form-label">Delivery Address / Drop-off Details <span className="label-req">*</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. Bole Medhanialem, next to Edna Mall, House #142"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Pickup Location</label>
+                    <input
+                      type="text"
+                      className="form-input pickup-loc-readonly"
+                      value="🏬 Aura Store Pickup (Addis Ababa)"
+                      readOnly
+                      disabled
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="form-group">
                 <label className="form-label">Order Notes / Printing Instructions (Optional)</label>
@@ -531,6 +663,12 @@ const PlaceOrder = () => {
                 <span>Delivery Fee ({deliveryType}):</span>
                 <span>{deliveryFee > 0 ? `${deliveryFee} ${settings.currency}` : "0 " + settings.currency}</span>
               </div>
+              {isUrgent && (
+                <div className="total-detail-line urgent-fee-line">
+                  <span>⚡ Urgent Same-Day Fee:</span>
+                  <span className="urgent-fee-amount">+{urgentFee} {settings.currency}</span>
+                </div>
+              )}
               <div className="total-detail-line final-total-line">
                 <span>Total Due:</span>
                 <span className="grand-total-val">

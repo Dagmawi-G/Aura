@@ -37,6 +37,8 @@ const submitGuestOrder = async (req, res) => {
       customerCoordinates: customerCoordinates,
       distanceKm: Number(req.body.distanceKm) || 0,
       deliveryFee: Number(req.body.deliveryFee) || 0,
+      isUrgent: req.body.isUrgent === "true" || req.body.isUrgent === true,
+      urgentFee: Number(req.body.urgentFee) || 0,
       items: items,
       subtotal: Number(req.body.subtotal) || 0,
       totalAmount: Number(req.body.totalAmount) || 0,
@@ -45,6 +47,7 @@ const submitGuestOrder = async (req, res) => {
       paymentAccount: req.body.paymentAccount || "",
       paymentProof: paymentProofFilename,
       notes: req.body.notes || "",
+      deliveryDate: req.body.deliveryDate || "",
       status: "Pending Verification"
     });
 

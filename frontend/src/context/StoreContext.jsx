@@ -89,7 +89,9 @@ const StoreContextProvider = (props) => {
     storeAddress: "Bole Medhanialem, Addis Ababa, Ethiopia",
     storeCoordinates: { lat: 8.9956, lng: 38.7891 },
     deliveryRatePerKm: 25,
-    deliveryTiers: { under10: 300, between10and20: 500, over20: 700 },
+    deliveryTiers: { under5: 200, between5and10: 350, between10and15: 500, over15: 700 },
+    urgentFee: 100,
+    storePhone: "+251 911 223 344",
     prepaymentPerItem: 500,
     currency: "ETB",
     paymentMethods: []
@@ -296,13 +298,14 @@ const StoreContextProvider = (props) => {
     );
   };
 
-  // Calculate fee from distance using tiered pricing
+  // Calculate fee from distance using 4 tiered pricing categories (<5km, 5-10km, 10-15km, >15km)
   const computeDeliveryFee = (distKm) => {
     if (distKm <= 0) return 0;
-    const tiers = settings.deliveryTiers || { under10: 300, between10and20: 500, over20: 700 };
-    if (distKm < 10) return tiers.under10 || 300;
-    if (distKm <= 20) return tiers.between10and20 || 500;
-    return tiers.over20 || 700;
+    const tiers = settings.deliveryTiers || { under5: 200, between5and10: 350, between10and15: 500, over15: 700 };
+    if (distKm < 5) return tiers.under5 !== undefined ? tiers.under5 : (tiers.under10 || 200);
+    if (distKm < 10) return tiers.between5and10 !== undefined ? tiers.between5and10 : (tiers.under10 || 350);
+    if (distKm <= 15) return tiers.between10and15 !== undefined ? tiers.between10and15 : (tiers.between10and20 || 500);
+    return tiers.over15 !== undefined ? tiers.over15 : (tiers.over20 || 700);
   };
 
   // Calculate total prepayment (ቀብድ) based on quantity

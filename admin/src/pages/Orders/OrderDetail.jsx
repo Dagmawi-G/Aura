@@ -122,15 +122,42 @@ const OrderDetail = ({ url }) => {
         </button>
         <div className="detail-order-id-wrap">
           <span className="detail-order-num">{order.orderNumber}</span>
+          {order.isUrgent && <span className="urgent-badge-compact">⚡ URGENT</span>}
           <span className={`status-pill ${getStatusClass(order.status)}`}>{order.status}</span>
         </div>
-        <span className="detail-date">
-          {new Date(order.createdAt || order.date).toLocaleString("en-ET", {
-            weekday: "short", year: "numeric", month: "short",
-            day: "numeric", hour: "2-digit", minute: "2-digit",
-          })}
-        </span>
+        <div className="detail-date-wrap">
+          <span className="detail-date">
+            Placed: {new Date(order.createdAt || order.date).toLocaleString("en-ET", {
+              weekday: "short", year: "numeric", month: "short",
+              day: "numeric", hour: "2-digit", minute: "2-digit",
+            })}
+          </span>
+          {order.deliveryDate && (
+            <span className={`target-due-pill ${order.isUrgent ? "urgent-due" : ""}`}>
+              {order.isUrgent ? "⚡ Urgent Same-Day:" : "📅 Target:"} <strong>{order.deliveryDate}</strong>
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Urgent Order Priority Alert Banner */}
+      {order.isUrgent && (
+        <div className="urgent-order-banner">
+          <div className="urgent-banner-icon">⚡</div>
+          <div className="urgent-banner-info">
+            <div className="urgent-banner-title">PRIORITY: URGENT SAME-DAY ORDER</div>
+            <div className="urgent-banner-desc">
+              Customer selected express same-day completion & delivery. An extra surcharge of <strong>+{order.urgentFee || 100} {currency}</strong> is included.
+            </div>
+          </div>
+          <a href={`tel:${order.customerPhone}`} className="btn-urgent-call-customer">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Call Customer
+          </a>
+        </div>
+      )}
 
       <div className="detail-content-grid">
         {/* ───────── LEFT COLUMN ───────── */}
@@ -152,6 +179,28 @@ const OrderDetail = ({ url }) => {
                 <p className="cust-email">✉️ {order.customerEmail}</p>
               )}
             </div>
+
+            {/* Target Delivery / Pickup Date Banner */}
+            {order.deliveryDate ? (
+              <div className="order-target-date-callout">
+                <div className="target-date-header">
+                  <span className="target-date-icon">📅</span>
+                  <span className="target-date-title">Requested {order.deliveryType === "Pickup" ? "Pickup" : "Delivery"} Date</span>
+                </div>
+                <div className="target-date-display">
+                  {new Date(order.deliveryDate + "T00:00:00").toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric"
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="order-target-date-callout no-date">
+                <span className="target-date-title">📅 Date: Standard ASAP</span>
+              </div>
+            )}
 
             <div className="fulfillment-badge-wrap">
               <span className={`fulfillment-badge ${order.deliveryType === "Pickup" ? "pickup" : "delivery"}`}>
@@ -363,6 +412,12 @@ const OrderDetail = ({ url }) => {
                 <div className="summary-line">
                   <span>Delivery Charge:</span>
                   <span>{order.deliveryFee} {currency}</span>
+                </div>
+              )}
+              {order.isUrgent && (
+                <div className="summary-line urgent-surcharge-line">
+                  <span>⚡ Urgent Express Surcharge:</span>
+                  <span className="urgent-surcharge-val">+{order.urgentFee || 100} {currency}</span>
                 </div>
               )}
               <div className="summary-line total-line">

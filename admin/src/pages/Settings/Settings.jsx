@@ -12,7 +12,9 @@ const Settings = ({ url }) => {
     storeName: "Aura collection",
     storeAddress: "Bole Medhanialem, Addis Ababa, Ethiopia",
     storeCoordinates: { lat: 8.9956, lng: 38.7891 },
-    deliveryTiers: { under10: 300, between10and20: 500, over20: 700 },
+    deliveryTiers: { under5: 200, between5and10: 350, between10and15: 500, over15: 700 },
+    urgentFee: 100,
+    storePhone: "+251 911 223 344",
     prepaymentPerItem: 500,
     currency: "ETB",
     paymentMethods: []
@@ -40,9 +42,20 @@ const Settings = ({ url }) => {
       const res = await axios.get(`${url}/api/setting`);
       if (res.data.success) {
         const data = res.data.data;
-        // Ensure deliveryTiers exists
-        if (!data.deliveryTiers) {
-          data.deliveryTiers = { under10: 300, between10and20: 500, over20: 700 };
+        // Ensure 4 deliveryTiers exist
+        if (!data.deliveryTiers || data.deliveryTiers.under5 === undefined) {
+          data.deliveryTiers = {
+            under5: data.deliveryTiers?.under5 ?? 200,
+            between5and10: data.deliveryTiers?.between5and10 ?? 350,
+            between10and15: data.deliveryTiers?.between10and15 ?? 500,
+            over15: data.deliveryTiers?.over15 ?? 700
+          };
+        }
+        if (data.urgentFee === undefined) {
+          data.urgentFee = 100;
+        }
+        if (!data.storePhone) {
+          data.storePhone = "+251 911 223 344";
         }
         if (data.prepaymentPerItem === undefined) {
           data.prepaymentPerItem = 500;
@@ -175,7 +188,7 @@ const Settings = ({ url }) => {
     );
   }
 
-  const tiers = settings.deliveryTiers || { under10: 300, between10and20: 500, over20: 700 };
+  const tiers = settings.deliveryTiers || { under5: 200, between5and10: 350, between10and15: 500, over15: 700 };
 
   return (
     <div className="settings-page fade-in">
@@ -296,18 +309,18 @@ const Settings = ({ url }) => {
               <div className="tiers-grid">
                 <div className="tier-item">
                   <div className="tier-range-label">
-                    <span className="tier-badge under">Under 10 km</span>
+                    <span className="tier-badge under">Under 5 km</span>
                   </div>
                   <div className="input-group-addon">
                     <input
                       type="number"
                       min="0"
                       className="form-input tier-input"
-                      value={tiers.under10}
+                      value={tiers.under5 !== undefined ? tiers.under5 : 200}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, under10: Number(e.target.value) }
+                          deliveryTiers: { ...tiers, under5: Number(e.target.value) }
                         })
                       }
                     />
@@ -317,18 +330,18 @@ const Settings = ({ url }) => {
 
                 <div className="tier-item">
                   <div className="tier-range-label">
-                    <span className="tier-badge mid">10 – 20 km</span>
+                    <span className="tier-badge mid-low">5 – 10 km</span>
                   </div>
                   <div className="input-group-addon">
                     <input
                       type="number"
                       min="0"
                       className="form-input tier-input"
-                      value={tiers.between10and20}
+                      value={tiers.between5and10 !== undefined ? tiers.between5and10 : 350}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, between10and20: Number(e.target.value) }
+                          deliveryTiers: { ...tiers, between5and10: Number(e.target.value) }
                         })
                       }
                     />
@@ -338,18 +351,39 @@ const Settings = ({ url }) => {
 
                 <div className="tier-item">
                   <div className="tier-range-label">
-                    <span className="tier-badge far">Over 20 km</span>
+                    <span className="tier-badge mid-high">10 – 15 km</span>
                   </div>
                   <div className="input-group-addon">
                     <input
                       type="number"
                       min="0"
                       className="form-input tier-input"
-                      value={tiers.over20}
+                      value={tiers.between10and15 !== undefined ? tiers.between10and15 : 500}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, over20: Number(e.target.value) }
+                          deliveryTiers: { ...tiers, between10and15: Number(e.target.value) }
+                        })
+                      }
+                    />
+                    <span className="input-addon-text">{settings.currency}</span>
+                  </div>
+                </div>
+
+                <div className="tier-item">
+                  <div className="tier-range-label">
+                    <span className="tier-badge far">Over 15 km</span>
+                  </div>
+                  <div className="input-group-addon">
+                    <input
+                      type="number"
+                      min="0"
+                      className="form-input tier-input"
+                      value={tiers.over15 !== undefined ? tiers.over15 : 700}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          deliveryTiers: { ...tiers, over15: Number(e.target.value) }
                         })
                       }
                     />
@@ -385,6 +419,50 @@ const Settings = ({ url }) => {
                   <span className="input-addon-text">{settings.currency}</span>
                 </div>
               </div>
+            </div>
+
+            {/* ── Urgent Order (Same-Day) Fee ── */}
+            <div className="tiers-section" style={{ marginTop: "0.25rem" }}>
+              <div className="tiers-header">
+                <span className="tiers-icon">⚡</span>
+                <div>
+                  <h3 className="tiers-title">Urgent Order (Same-Day Express) Fee</h3>
+                  <p className="tiers-desc">Surcharge added when customer requests urgent same-day delivery</p>
+                </div>
+              </div>
+              <div className="tier-item">
+                <div className="tier-range-label">
+                  <span className="tier-badge far" style={{ background: "#fef3c7", color: "#92400e", borderColor: "#fde68a" }}>
+                    ⚡ Urgent Fee
+                  </span>
+                </div>
+                <div className="input-group-addon">
+                  <input
+                    type="number"
+                    min="0"
+                    className="form-input tier-input"
+                    value={settings.urgentFee !== undefined ? settings.urgentFee : 100}
+                    onChange={(e) =>
+                      setSettings({ ...settings, urgentFee: Number(e.target.value) })
+                    }
+                  />
+                  <span className="input-addon-text">{settings.currency}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Store Contact Phone for Urgent Orders ── */}
+            <div className="form-group">
+              <label className="form-label">📞 Store Contact Phone (For Urgent Order Calls)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={settings.storePhone || ""}
+                onChange={(e) => setSettings({ ...settings, storePhone: e.target.value })}
+                placeholder="e.g. +251 911 223 344 or 0911223344"
+                required
+              />
+              <span className="label-subtext">This phone number is recommended to urgent order customers to notify you immediately.</span>
             </div>
 
             <div className="form-group">

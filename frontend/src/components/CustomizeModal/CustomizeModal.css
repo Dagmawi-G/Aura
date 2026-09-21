@@ -970,18 +970,19 @@
 
 .btn-proceed-checkout {
   padding: 0.7rem 1.4rem;
-  background: linear-gradient(135deg, #1c1917, #0c0a09);
+  background: linear-gradient(135deg, #4a2b18, #26140a);
   color: #ffffff;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(28, 25, 23, 0.2);
+  box-shadow: 0 4px 12px rgba(61, 35, 20, 0.22);
   transition: var(--transition);
   min-height: 44px;
 }
 
 .btn-proceed-checkout:hover {
-  background: #000000;
+  background: #1f0f07;
+  transform: translateY(-1px);
 }
 
 /* Native Mobile Bottom Sheet Mode */

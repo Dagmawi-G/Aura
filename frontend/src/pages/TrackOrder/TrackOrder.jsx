@@ -164,6 +164,9 @@ const TrackOrder = () => {
                     <p><strong>Name:</strong> {order.customerName}</p>
                     <p><strong>Phone:</strong> {order.customerPhone}</p>
                     <p><strong>Fulfillment:</strong> {order.deliveryType}</p>
+                    {order.deliveryDate && (
+                      <p><strong>Target Date:</strong> 📅 {order.deliveryDate}</p>
+                    )}
                     {order.deliveryType === "Delivery" && (
                       <>
                         <p><strong>Distance:</strong> {order.distanceKm} km</p>

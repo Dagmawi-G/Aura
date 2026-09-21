@@ -45,6 +45,7 @@ const Orders = ({ url }) => {
 
   const filteredOrders = orders.filter((order) => {
     if (statusFilter === "All") return true;
+    if (statusFilter === "⚡ Urgent Orders") return order.isUrgent === true;
     return order.status === statusFilter;
   });
 
@@ -52,6 +53,8 @@ const Orders = ({ url }) => {
     if (!items || items.length === 0) return 0;
     return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   };
+
+  const urgentOrdersCount = orders.filter((o) => o.isUrgent).length;
 
   return (
     <div className="orders-page fade-in">
@@ -74,12 +77,16 @@ const Orders = ({ url }) => {
 
       {/* Filter Tabs */}
       <div className="orders-filter-bar aura-card">
-        {["All", "Pending Verification", "Payment Verified", "Processing / Printing", "Out for Delivery", "Ready for Pickup", "Completed"].map((status) => {
-          const count = status === "All" ? orders.length : orders.filter((o) => o.status === status).length;
+        {["All", "⚡ Urgent Orders", "Pending Verification", "Payment Verified", "Processing / Printing", "Out for Delivery", "Ready for Pickup", "Completed"].map((status) => {
+          let count = 0;
+          if (status === "All") count = orders.length;
+          else if (status === "⚡ Urgent Orders") count = urgentOrdersCount;
+          else count = orders.filter((o) => o.status === status).length;
+
           return (
             <button
               key={status}
-              className={`order-filter-pill ${statusFilter === status ? "active" : ""}`}
+              className={`order-filter-pill ${statusFilter === status ? "active" : ""} ${status === "⚡ Urgent Orders" ? "urgent-pill" : ""}`}
               onClick={() => setStatusFilter(status)}
             >
               <span>{status}</span>
@@ -107,13 +114,18 @@ const Orders = ({ url }) => {
             return (
               <div
                 key={order._id}
-                className="order-card-compact"
+                className={`order-card-compact ${order.isUrgent ? "is-urgent-card" : ""}`}
                 onClick={() => navigate(`/orders/${order._id}`)}
                 title="Click to view full order details"
               >
                 {/* Left: Main identity */}
                 <div className="compact-main">
-                  <div className="compact-order-num">{order.orderNumber || "ORDER"}</div>
+                  <div className="compact-order-header-row">
+                    <div className="compact-order-num">{order.orderNumber || "ORDER"}</div>
+                    {order.isUrgent && (
+                      <span className="urgent-badge-compact">⚡ URGENT</span>
+                    )}
+                  </div>
                   <div className="compact-name">{order.customerName}</div>
                   <div className="compact-phone">
                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
@@ -123,11 +135,18 @@ const Orders = ({ url }) => {
                   </div>
                 </div>
 
-                {/* Center: Fulfillment + item count */}
+                {/* Center: Fulfillment + item count + target date */}
                 <div className="compact-meta">
-                  <span className={`fulfillment-badge ${order.deliveryType === "Pickup" ? "pickup" : "delivery"}`}>
-                    {order.deliveryType === "Pickup" ? "🏬 Pickup" : "🚚 Delivery"}
-                  </span>
+                  <div className="compact-meta-badges">
+                    <span className={`fulfillment-badge ${order.deliveryType === "Pickup" ? "pickup" : "delivery"}`}>
+                      {order.deliveryType === "Pickup" ? "🏬 Pickup" : "🚚 Delivery"}
+                    </span>
+                    {order.deliveryDate && (
+                      <span className={`compact-due-pill ${order.isUrgent ? "urgent-due" : ""}`} title="Target Date">
+                        {order.isUrgent ? "⚡ Today (Same-Day)" : `📅 ${order.deliveryDate}`}
+                      </span>
+                    )}
+                  </div>
                   <div className="compact-items-count">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />

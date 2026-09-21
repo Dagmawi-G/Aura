@@ -34,16 +34,31 @@ const getSettings = async (req, res) => {
         storeAddress: "Bole Medhanialem, Addis Ababa, Ethiopia",
         storeCoordinates: { lat: 8.9956, lng: 38.7891 },
         deliveryRatePerKm: 25,
-        deliveryTiers: { under10: 300, between10and20: 500, over20: 700 },
+        deliveryTiers: { under5: 200, between5and10: 350, between10and15: 500, over15: 700 },
+        urgentFee: 100,
+        storePhone: "+251 911 223 344",
         prepaymentPerItem: 500,
         currency: "ETB",
         paymentMethods: defaultPaymentMethods
       });
       await settings.save();
     }
-    // Ensure tiers exist (migrate old records)
-    if (!settings.deliveryTiers || !settings.deliveryTiers.under10) {
-      settings.deliveryTiers = { under10: 300, between10and20: 500, over20: 700 };
+    // Ensure 4 tiers exist (migrate old 3-tier records seamlessly)
+    if (!settings.deliveryTiers || settings.deliveryTiers.under5 === undefined) {
+      settings.deliveryTiers = {
+        under5: settings.deliveryTiers?.under5 ?? 200,
+        between5and10: settings.deliveryTiers?.between5and10 ?? 350,
+        between10and15: settings.deliveryTiers?.between10and15 ?? 500,
+        over15: settings.deliveryTiers?.over15 ?? 700
+      };
+      await settings.save();
+    }
+    if (settings.urgentFee === undefined || settings.urgentFee === null) {
+      settings.urgentFee = 100;
+      await settings.save();
+    }
+    if (!settings.storePhone) {
+      settings.storePhone = "+251 911 223 344";
       await settings.save();
     }
     if (settings.prepaymentPerItem === undefined || settings.prepaymentPerItem === null) {
@@ -60,12 +75,12 @@ const getSettings = async (req, res) => {
 // Update Settings
 const updateSettings = async (req, res) => {
   try {
-    const { storeName, storeAddress, storeCoordinates, deliveryRatePerKm, deliveryTiers, prepaymentPerItem, currency, paymentMethods } = req.body;
+    const { storeName, storeAddress, storeCoordinates, deliveryRatePerKm, deliveryTiers, urgentFee, storePhone, prepaymentPerItem, currency, paymentMethods } = req.body;
     let settings = await settingModel.findOne({});
     if (!settings) {
       settings = new settingModel({
         storeName, storeAddress, storeCoordinates,
-        deliveryRatePerKm, deliveryTiers, prepaymentPerItem,
+        deliveryRatePerKm, deliveryTiers, urgentFee, storePhone, prepaymentPerItem,
         currency, paymentMethods
       });
     } else {
@@ -73,11 +88,16 @@ const updateSettings = async (req, res) => {
       if (storeAddress !== undefined) settings.storeAddress = storeAddress;
       if (storeCoordinates !== undefined) settings.storeCoordinates = storeCoordinates;
       if (deliveryRatePerKm !== undefined) settings.deliveryRatePerKm = Number(deliveryRatePerKm);
-      if (deliveryTiers !== undefined) settings.deliveryTiers = {
-        under10: Number(deliveryTiers.under10) || 300,
-        between10and20: Number(deliveryTiers.between10and20) || 500,
-        over20: Number(deliveryTiers.over20) || 700
-      };
+      if (deliveryTiers !== undefined) {
+        settings.deliveryTiers = {
+          under5: Number(deliveryTiers.under5) || 200,
+          between5and10: Number(deliveryTiers.between5and10) || 350,
+          between10and15: Number(deliveryTiers.between10and15) || 500,
+          over15: Number(deliveryTiers.over15) || 700
+        };
+      }
+      if (urgentFee !== undefined) settings.urgentFee = Number(urgentFee);
+      if (storePhone !== undefined) settings.storePhone = storePhone;
       if (prepaymentPerItem !== undefined) settings.prepaymentPerItem = Number(prepaymentPerItem);
       if (currency !== undefined) settings.currency = currency;
       if (paymentMethods !== undefined) settings.paymentMethods = paymentMethods;

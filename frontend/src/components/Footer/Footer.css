@@ -1,7 +1,7 @@
 .aura-footer {
-  background: #1c1917;
-  color: #d6d3d1;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #26160d;
+  color: #d8cec4;
+  border-top: 1px solid rgba(161, 92, 30, 0.2);
   margin-top: 4rem;
   padding: 3.5rem 1.5rem 2rem;
   width: 100%;
@@ -33,15 +33,15 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: #0c0a09;
-  color: #fbbf24;
+  background: #180d07;
+  color: #f5deb3;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 1.25rem;
-  border: 1px solid rgba(251, 191, 36, 0.35);
+  border: 1px solid rgba(161, 92, 30, 0.4);
   flex-shrink: 0;
 }
 
@@ -62,13 +62,13 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #fbbf24;
+  color: #f5deb3;
 }
 
 .footer-desc {
   font-size: 0.82rem;
   line-height: 1.55;
-  color: #a8a29e;
+  color: #bfaea2;
   max-width: 440px;
 }
 
@@ -82,9 +82,9 @@
 .footer-badge {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #f5deb3;
+  background: rgba(245, 222, 179, 0.1);
+  border: 1px solid rgba(245, 222, 179, 0.25);
   padding: 3px 8px;
   border-radius: var(--radius-full);
 }
@@ -106,7 +106,7 @@
 
 .footer-links-list a {
   font-size: 0.85rem;
-  color: #a8a29e;
+  color: #bfaea2;
   transition: var(--transition);
 }
 
@@ -117,7 +117,7 @@
 
 .footer-support-note {
   font-size: 0.8rem;
-  color: #a8a29e;
+  color: #bfaea2;
   line-height: 1.4;
 }
 
@@ -130,16 +130,16 @@
 .pm-pill {
   font-size: 0.72rem;
   font-weight: 600;
-  background: #292524;
-  color: #e7e5e4;
-  border: 1px solid #44403c;
+  background: #382013;
+  color: #f5ede6;
+  border: 1px solid #543320;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
 }
 
 .footer-address-text {
   font-size: 0.78rem;
-  color: #a8a29e;
+  color: #bfaea2;
   margin-top: 0.25rem;
 }
 
@@ -153,7 +153,7 @@
 
 .footer-copyright {
   font-size: 0.78rem;
-  color: #78716c;
+  color: #8c7a6e;
 }
 
 @media (max-width: 860px) {

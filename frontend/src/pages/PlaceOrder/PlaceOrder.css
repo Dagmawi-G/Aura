@@ -254,6 +254,30 @@
   gap: 0.85rem;
 }
 
+.form-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text-main);
+  font-size: 0.88rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+}
+
+.form-input.pickup-loc-readonly {
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: not-allowed;
+}
+
 .payment-accounts-list {
   display: flex;
   flex-direction: column;
@@ -578,19 +602,19 @@
 .btn-submit-order {
   width: 100%;
   padding: 0.85rem;
-  background: linear-gradient(135deg, #1c1917, #0c0a09);
+  background: linear-gradient(135deg, #4a2b18, #26140a);
   color: #ffffff;
   border-radius: var(--radius-full);
   font-size: 0.92rem;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.25);
+  box-shadow: 0 4px 14px rgba(61, 35, 20, 0.25);
   transition: var(--transition);
   min-height: 48px;
 }
 
 .btn-submit-order:hover,
 .btn-submit-order:active {
-  background: #000000;
+  background: #1f0f07;
   transform: translateY(-2px);
 }
 
@@ -782,6 +806,261 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ── Urgent Order Toggle Card & Callout ── */
+.urgent-order-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.urgent-order-card:hover {
+  border-color: #f59e0b;
+  background: #fffdfa;
+}
+
+.urgent-order-card.active {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+
+.urgent-toggle-top {
+  display: flex;
+  align-items: flex-start;
+}
+
+.urgent-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.urgent-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.urgent-checkbox-custom {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: var(--transition);
+}
+
+.urgent-checkbox-input:checked + .urgent-checkbox-custom {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.urgent-label-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.urgent-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.urgent-bolt-icon {
+  font-size: 1.1rem;
+  animation: pulseBolt 1.5s infinite;
+}
+
+@keyframes pulseBolt {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.urgent-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.urgent-order-card.active .urgent-title {
+  color: #92400e;
+}
+
+.urgent-fee-tag {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+
+.urgent-order-card.active .urgent-fee-tag {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+.urgent-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.urgent-call-recommendation {
+  background: #ffffff;
+  border: 1.5px dashed #f59e0b;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.rec-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rec-icon {
+  font-size: 1rem;
+}
+
+.rec-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.rec-body {
+  font-size: 0.8rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.rec-phone-link {
+  color: #b45309;
+  text-decoration: underline;
+}
+
+.rec-phone-link:hover {
+  color: #78350f;
+}
+
+.urgent-date-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b45309;
+  margin-top: 2px;
+}
+
+.urgent-fee-line {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.urgent-fee-amount {
+  color: #b45309;
+  font-weight: 800;
+}
+
+/* ── Urgent Receipt Banner (Confirmation View) ── */
+.urgent-receipt-banner {
+  width: 100%;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.2);
+}
+
+.urgent-badge-pill {
+  background: #d97706;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.urgent-alert-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.urgent-alert-text {
+  font-size: 0.85rem;
+  color: #78350f;
+  max-width: 480px;
+  line-height: 1.45;
+}
+
+.btn-call-seller-urgent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #d97706;
+  color: #ffffff;
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  transition: var(--transition);
+}
+
+.btn-call-seller-urgent:hover {
+  background: #b45309;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+}
+
+.urgent-tag-small {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.urgent-item-row {
+  color: #b45309;
+  font-weight: 700;
 }
 
 @media (max-width: 860px) {

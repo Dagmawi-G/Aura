@@ -18,12 +18,17 @@ const settingSchema = new mongoose.Schema({
   },
   // Legacy field kept for backward compatibility
   deliveryRatePerKm: { type: Number, default: 25 },
-  // Tiered delivery fees (configurable by admin)
+  // Tiered delivery fees (4 categories: <5km, 5-10km, 10-15km, >15km)
   deliveryTiers: {
-    under10: { type: Number, default: 300 },       // < 10 km
-    between10and20: { type: Number, default: 500 }, // 10 - 20 km
-    over20: { type: Number, default: 700 }          // > 20 km
+    under5: { type: Number, default: 200 },         // < 5 km
+    between5and10: { type: Number, default: 350 },  // 5 - 10 km
+    between10and15: { type: Number, default: 500 }, // 10 - 15 km
+    over15: { type: Number, default: 700 }          // > 15 km
   },
+  // Extra surcharge for urgent same-day order
+  urgentFee: { type: Number, default: 100 },
+  // Store contact phone for urgent order notifications
+  storePhone: { type: String, default: "+251 911 223 344" },
   // Minimum prepayment (ቀብድ) per item
   prepaymentPerItem: { type: Number, default: 500 },
   currency: { type: String, default: "ETB" },

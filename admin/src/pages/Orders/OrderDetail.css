@@ -48,10 +48,70 @@
   border: 1px solid var(--border);
 }
 
-.detail-date {
+.detail-date-wrap {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.detail-date {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+.target-due-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+}
+
+/* Target Delivery Date Callout */
+.order-target-date-callout {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid #fcd34d;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.1);
+}
+
+.order-target-date-callout.no-date {
+  background: var(--surface-subtle);
+  border: 1px dashed var(--border);
+  box-shadow: none;
+}
+
+.target-date-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.target-date-icon {
+  font-size: 1rem;
+}
+
+.target-date-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.target-date-display {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #78350f;
+  letter-spacing: -0.01em;
 }
 
 /* Content grid */
@@ -92,7 +152,7 @@
 
 .item-count-badge {
   margin-left: auto;
-  background: #0f172a;
+  background: var(--primary);
   color: #fff;
   font-size: 0.7rem;
   padding: 2px 8px;
@@ -178,7 +238,7 @@
 
 .highlight-fee {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--primary);
 }
 
 /* Map link */
@@ -256,8 +316,8 @@
 }
 
 .status-btn:hover:not(:disabled) {
-  background: #e2e8f0;
-  color: var(--text-main);
+  background: var(--accent-light);
+  color: var(--primary);
 }
 
 .status-btn.active {
@@ -313,7 +373,7 @@
 }
 
 .item-qty-badge {
-  background: #0f172a;
+  background: var(--primary);
   color: #ffffff;
   padding: 2px 6px;
   border-radius: var(--radius-full);
@@ -323,7 +383,7 @@
 
 .item-name { flex: 1; color: var(--text-main); }
 
-.item-price { font-weight: 700; color: #0f172a; }
+.item-price { font-weight: 700; color: var(--primary); }
 
 .custom-print-box {
   background: #ffffff;
@@ -350,7 +410,7 @@
 
 .custom-print-val {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--primary);
   font-family: 'Courier New', monospace;
 }
 
@@ -669,7 +729,108 @@
 
 .remaining-admin-val {
   font-weight: 800;
-  color: #0f172a;
+  color: var(--primary);
   font-size: 0.95rem;
 }
+
+/* ── Urgent Order Priority Banner ── */
+.urgent-order-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+  animation: banner-glow 3s infinite alternate ease-in-out;
+}
+
+@keyframes banner-glow {
+  0% { box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15); }
+  100% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3); }
+}
+
+.urgent-banner-icon {
+  font-size: 2rem;
+  line-height: 1;
+  background: #ffffff;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+  flex-shrink: 0;
+}
+
+.urgent-banner-info {
+  flex: 1;
+}
+
+.urgent-banner-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #991b1b;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.urgent-banner-desc {
+  font-size: 0.85rem;
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+
+.urgent-banner-desc strong {
+  color: #991b1b;
+}
+
+.btn-urgent-call-customer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #dc2626;
+  color: #ffffff;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.35);
+  transition: var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-urgent-call-customer:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+  color: #ffffff;
+}
+
+/* Urgent Surcharge Line in Order Total */
+.urgent-surcharge-line {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.urgent-surcharge-val {
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .urgent-order-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-urgent-call-customer {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 
