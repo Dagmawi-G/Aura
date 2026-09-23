@@ -5,15 +5,75 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
 
-const ORDER_STATUSES = [
-  "Pending Verification",
-  "Payment Verified",
-  "Processing / Printing",
-  "Out for Delivery",
-  "Ready for Pickup",
-  "Completed",
-  "Cancelled",
-];
+export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
+  if (!deliveryDate) {
+    if (isUrgent) return { text: "Today (Urgent)", badgeText: "⚡ Today", status: "today", days: 0 };
+    return { text: "ASAP", badgeText: "📅 ASAP", status: "normal", days: 0 };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const parts = String(deliveryDate).split("T")[0].split("-");
+  let target;
+  if (parts.length === 3) {
+    target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  } else {
+    target = new Date(deliveryDate);
+    target.setHours(0, 0, 0, 0);
+  }
+
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    return {
+      text: overdueDays === 1 ? "Passed yesterday (1 day overdue)" : `Passed ${overdueDays} days ago (Overdue)`,
+      shortText: overdueDays === 1 ? "1d Overdue" : `${overdueDays}d Overdue`,
+      badgeText: overdueDays === 1 ? "⚠️ 1d Overdue" : `⚠️ ${overdueDays}d Overdue`,
+      status: "overdue",
+      days: diffDays,
+      overdueDays,
+    };
+  } else if (diffDays === 0) {
+    return {
+      text: isUrgent ? "Today (Urgent Same-Day)" : "Today",
+      shortText: "Today",
+      badgeText: isUrgent ? "⚡ Today (Urgent)" : "⚡ Today",
+      status: "today",
+      days: 0,
+    };
+  } else if (diffDays === 1) {
+    return {
+      text: "Tomorrow (1 day left)",
+      shortText: "Tomorrow",
+      badgeText: "📅 Tomorrow",
+      status: "soon",
+      days: 1,
+    };
+  } else {
+    return {
+      text: `${diffDays} days left`,
+      shortText: `${diffDays} days left`,
+      badgeText: `📅 in ${diffDays} days`,
+      status: "upcoming",
+      days: diffDays,
+    };
+  }
+};
+
+const getAvailableStatuses = (deliveryType) => {
+  const isPickup = deliveryType === "Pickup";
+  return [
+    "Pending Verification",
+    "Payment Verified",
+    "Processing / Printing",
+    isPickup ? "Ready for Pickup" : "Out for Delivery",
+    "Completed",
+    "Cancelled",
+  ];
+};
 
 const getStatusClass = (status) => {
   switch (status) {
@@ -132,11 +192,14 @@ const OrderDetail = ({ url }) => {
               day: "numeric", hour: "2-digit", minute: "2-digit",
             })}
           </span>
-          {order.deliveryDate && (
-            <span className={`target-due-pill ${order.isUrgent ? "urgent-due" : ""}`}>
-              {order.isUrgent ? "⚡ Urgent Same-Day:" : "📅 Target:"} <strong>{order.deliveryDate}</strong>
-            </span>
-          )}
+          {order.deliveryDate && (() => {
+            const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
+            return (
+              <span className={`target-due-pill ${countdown.status} ${order.isUrgent ? "urgent-due" : ""}`}>
+                {countdown.badgeText} ({order.deliveryDate})
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -181,22 +244,30 @@ const OrderDetail = ({ url }) => {
             </div>
 
             {/* Target Delivery / Pickup Date Banner */}
-            {order.deliveryDate ? (
-              <div className="order-target-date-callout">
-                <div className="target-date-header">
-                  <span className="target-date-icon">📅</span>
-                  <span className="target-date-title">Requested {order.deliveryType === "Pickup" ? "Pickup" : "Delivery"} Date</span>
+            {order.deliveryDate ? (() => {
+              const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
+              return (
+                <div className={`order-target-date-callout ${countdown.status} ${order.isUrgent ? "is-urgent" : ""}`}>
+                  <div className="target-date-header">
+                    <span className="target-date-icon">
+                      {countdown.status === "overdue" ? "⚠️" : countdown.status === "today" ? "⚡" : "📅"}
+                    </span>
+                    <span className="target-date-title">Requested {order.deliveryType === "Pickup" ? "Pickup" : "Delivery"} Date</span>
+                    <span className={`target-countdown-chip ${countdown.status}`}>
+                      {countdown.text}
+                    </span>
+                  </div>
+                  <div className="target-date-display">
+                    {new Date(order.deliveryDate + "T00:00:00").toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric"
+                    })}
+                  </div>
                 </div>
-                <div className="target-date-display">
-                  {new Date(order.deliveryDate + "T00:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric"
-                  })}
-                </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <div className="order-target-date-callout no-date">
                 <span className="target-date-title">📅 Date: Standard ASAP</span>
               </div>
@@ -328,7 +399,7 @@ const OrderDetail = ({ url }) => {
               Update Order Status
             </div>
             <div className="status-buttons-grid">
-              {ORDER_STATUSES.map((s) => (
+              {getAvailableStatuses(order.deliveryType).map((s) => (
                 <button
                   key={s}
                   className={`status-btn ${order.status === s ? "active" : ""} ${getStatusClass(s)}`}

@@ -5,6 +5,64 @@ import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const getDeliveryCountdown = (deliveryDate, isUrgent) => {
+  if (!deliveryDate) {
+    if (isUrgent) return { text: "Today (Urgent)", badgeText: "⚡ Today", status: "today", days: 0 };
+    return { text: "ASAP", badgeText: "📅 ASAP", status: "normal", days: 0 };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const parts = String(deliveryDate).split("T")[0].split("-");
+  let target;
+  if (parts.length === 3) {
+    target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  } else {
+    target = new Date(deliveryDate);
+    target.setHours(0, 0, 0, 0);
+  }
+
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    return {
+      text: overdueDays === 1 ? "Passed yesterday (1 day overdue)" : `Passed ${overdueDays} days ago (Overdue)`,
+      shortText: overdueDays === 1 ? "1d Overdue" : `${overdueDays}d Overdue`,
+      badgeText: overdueDays === 1 ? "⚠️ 1d Overdue" : `⚠️ ${overdueDays}d Overdue`,
+      status: "overdue",
+      days: diffDays,
+      overdueDays,
+    };
+  } else if (diffDays === 0) {
+    return {
+      text: isUrgent ? "Today (Urgent Same-Day)" : "Today",
+      shortText: "Today",
+      badgeText: isUrgent ? "⚡ Today (Urgent)" : "⚡ Today",
+      status: "today",
+      days: 0,
+    };
+  } else if (diffDays === 1) {
+    return {
+      text: "Tomorrow (1 day left)",
+      shortText: "Tomorrow",
+      badgeText: "📅 Tomorrow",
+      status: "soon",
+      days: 1,
+    };
+  } else {
+    return {
+      text: `${diffDays} days left`,
+      shortText: `${diffDays} days left`,
+      badgeText: `📅 in ${diffDays} days`,
+      status: "upcoming",
+      days: diffDays,
+    };
+  }
+};
+
 const TrackOrder = () => {
   const { url, settings } = useContext(StoreContext);
   const [searchParams] = useSearchParams();
@@ -204,9 +262,17 @@ const TrackOrder = () => {
                     <p><strong>Name:</strong> {order.customerName}</p>
                     <p><strong>Phone:</strong> {order.customerPhone}</p>
                     <p><strong>Fulfillment:</strong> {order.deliveryType}</p>
-                    {order.deliveryDate && (
-                      <p><strong>Target Date:</strong> 📅 {order.deliveryDate}</p>
-                    )}
+                    {order.deliveryDate && (() => {
+                      const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
+                      return (
+                        <p className="track-target-date-row">
+                          <strong>Target Date:</strong> 📅 {order.deliveryDate}
+                          <span className={`track-countdown-badge ${countdown.status}`}>
+                            {countdown.text}
+                          </span>
+                        </p>
+                      );
+                    })()}
                     {order.deliveryType === "Delivery" && (
                       <>
                         <p><strong>Distance:</strong> {order.distanceKm} km</p>
