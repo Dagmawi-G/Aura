@@ -443,18 +443,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                 />
-                <div className="font-options">
-                  {["Serif", "Modern", "Street", "Script"].map((font) => (
-                    <button
-                      key={font}
-                      type="button"
-                      className={`font-pill ${fontStyle === font ? "active" : ""}`}
-                      onClick={() => setFontStyle(font)}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 

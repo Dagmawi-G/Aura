@@ -78,151 +78,153 @@
   color: var(--text-main);
 }
 
-/* ── Compact Order Cards ── */
+/* ── Compact Order Cards (Darker high-contrast warm tone) ── */
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .order-card-compact {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1.1rem;
-  background: #ffffff;
-  border: 1px solid var(--border);
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  background: #ecdcd0;              /* Distinctly darker warm brown/taupe card */
+  border: 1.5px solid #c9b7a4;      /* Strong crisp border */
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
   position: relative;
-  box-shadow: var(--shadow-sm);
-}
-
-.order-filter-pill.urgent-pill {
-  color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fecaca;
-}
-
-.order-filter-pill.urgent-pill:hover {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.order-filter-pill.urgent-pill.active {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  color: #ffffff;
-  border-color: #b91c1c;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 4px 12px rgba(61, 35, 20, 0.08);
 }
 
 .order-card-compact:hover {
-  background: var(--surface-subtle);
-  border-color: #d8cbbf;
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.order-card-compact.is-urgent-card {
-  border-left: 4px solid #ef4444;
-  background: #fffafa;
-}
-
-.order-card-compact.is-urgent-card:hover {
-  background: #fff5f5;
-  border-color: #fca5a5;
-  border-left-color: #dc2626;
-}
-
-.urgent-badge-compact {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #fca5a5;
-  letter-spacing: 0.03em;
-  animation: pulse-subtle 2s infinite ease-in-out;
-}
-
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.88; transform: scale(1.02); }
-}
-
-.compact-due-pill.urgent-due {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+  background: #e0cfc1;              /* Rich darker hover */
+  border-color: #b49f8b;
+  box-shadow: 0 8px 20px rgba(61, 35, 20, 0.14);
+  transform: translateY(-2px);
 }
 
 .order-card-compact:active {
   transform: translateY(0);
 }
 
-/* Left: identity */
-.compact-main {
+/* Urgent orders styling */
+.order-card-compact.is-urgent-card {
+  border-left: 7px solid #dc2626;
+  border-color: #f87171;
+  background: #fadcdb;              /* Darker reddish tint */
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.16);
+}
+
+.order-card-compact.is-urgent-card:hover {
+  background: #f5cfce;
+  border-color: #ef4444;
+  border-left-color: #b91c1c;
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.22);
+}
+
+/* Card Top Bar */
+.compact-card-top {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 160px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed rgba(61, 35, 20, 0.18);
+}
+
+.compact-id-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .compact-order-num {
   font-family: 'Playfair Display', serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--primary);
-  background: var(--accent-light);
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  width: fit-content;
-}
-
-.compact-name {
   font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 800;
+  color: var(--primary);
+  background: #ffffff;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(61, 35, 20, 0.2);
+  display: inline-block;
 }
 
-.compact-phone {
-  display: flex;
+.urgent-badge-compact {
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
+  gap: 0.25rem;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #b91c1c;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+  animation: pulse-subtle 1.8s infinite ease-in-out;
 }
 
-/* Center: meta */
-.compact-meta {
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.03); }
+}
+
+/* ── 3 Core Fields Grid (Name, Due Date, Amount of Mugs) ── */
+.compact-card-content {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.compact-info-box {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  min-width: 120px;
+  gap: 0.2rem;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(61, 35, 20, 0.12);
 }
 
-.compact-meta-badges {
+.compact-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6e5849;
+}
+
+.compact-value {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #26170d;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
+}
+
+.compact-value.name-text {
+  font-weight: 800;
+  color: #1f120a;
+}
+
+.compact-value.mugs-text {
+  font-weight: 800;
+  color: var(--primary);
 }
 
 .compact-due-pill {
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #57331c;
-  background: var(--surface-subtle);
-  border: 1px solid var(--border);
+  font-weight: 800;
   padding: 2px 7px;
   border-radius: var(--radius-sm);
   white-space: nowrap;
@@ -231,120 +233,56 @@
 .compact-due-pill.today {
   color: #92400e;
   background: #fef3c7;
-  border-color: #fde68a;
-  font-weight: 800;
+  border: 1px solid #fde68a;
 }
 
 .compact-due-pill.overdue {
   color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fca5a5;
-  font-weight: 800;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
 }
 
 .compact-due-pill.soon {
   color: #1e40af;
   background: #eff6ff;
-  border-color: #bfdbfe;
+  border: 1px solid #bfdbfe;
 }
 
 .compact-due-pill.upcoming {
   color: #065f46;
   background: #ecfdf5;
-  border-color: #a7f3d0;
+  border: 1px solid #a7f3d0;
 }
 
-.compact-items-count {
+.compact-due-pill.urgent-due {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+/* Card Bottom Footer */
+.compact-card-bottom {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.76rem;
   font-weight: 600;
+  color: #7d6857;
+  padding-top: 0.2rem;
 }
 
-/* Fulfillment badges */
-.fulfillment-badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.fulfillment-badge.delivery {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-}
-
-.fulfillment-badge.pickup {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
-}
-
-/* Financial overview in list */
-.compact-financials {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  min-width: 125px;
-}
-
-.compact-prepay-badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-}
-
-.compact-prepay-badge strong {
-  font-weight: 800;
-}
-
-.compact-total-sub {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Right: status + date */
-.compact-status-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-  margin-left: auto;
-}
-
-.compact-date {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* Arrow */
 .compact-arrow {
-  color: #94a3b8;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  transition: var(--transition);
+  color: var(--primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: transform 0.2s ease;
 }
 
 .order-card-compact:hover .compact-arrow {
-  color: #475569;
-  transform: translateX(3px);
+  transform: translateX(4px);
 }
 
-/* Status pills (reused in compact + detail) */
+/* Status pills */
 .status-pill {
   display: inline-block;
   padding: 3px 9px;
@@ -372,14 +310,22 @@
 }
 
 /* Responsive */
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .order-card-compact {
-    flex-wrap: wrap;
+    padding: 0.85rem 0.95rem;
     gap: 0.6rem;
   }
-
-  .compact-main { min-width: unset; width: 100%; }
-  .compact-meta { flex-direction: row; align-items: center; }
-  .compact-status-side { flex-direction: row; align-items: center; margin-left: 0; }
-  .compact-arrow { margin-left: auto; }
+  .compact-card-content {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+  .compact-info-box {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0.65rem;
+  }
+  .compact-value {
+    font-size: 0.86rem;
+  }
 }

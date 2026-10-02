@@ -43,7 +43,8 @@
   padding: 1.15rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: #ffffff;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(61, 35, 20, 0.05);
 }
 
 .cart-item-media {
@@ -272,7 +273,8 @@
   padding: 1.35rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: #ffffff;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(61, 35, 20, 0.05);
   display: flex;
   flex-direction: column;
   gap: 1.15rem;

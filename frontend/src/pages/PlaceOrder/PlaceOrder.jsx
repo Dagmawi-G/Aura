@@ -4,6 +4,7 @@ import { StoreContext } from "../../context/StoreContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
+import BankLogo, { getPaymentProviderInfo } from "../../components/BankLogos/BankLogos";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -24,7 +25,6 @@ const PlaceOrder = () => {
   // Customer Information
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -76,7 +76,6 @@ const PlaceOrder = () => {
 
   const remainingBalance = Math.max(0, total - effectivePrepayment);
 
-
   // Determine delivery type from cart
   const deliveryType = cartDeliveryInfo?.deliveryType || (cartItems.some((i) => i.deliveryType === "Delivery") ? "Delivery" : "Pickup");
 
@@ -101,11 +100,11 @@ const PlaceOrder = () => {
     }
   }, [settings]);
 
-  // 1-Click Copy Handler
+  // 1-Click Copy Handlers
   const handleCopyAccount = (accountNumber, id) => {
     navigator.clipboard.writeText(accountNumber);
     setCopiedId(id);
-    toast.success(`Copied "${accountNumber}" to clipboard!`);
+    toast.success(`Copied Account Number "${accountNumber}" to clipboard!`);
     setTimeout(() => {
       setCopiedId(null);
     }, 2500);
@@ -166,7 +165,7 @@ const PlaceOrder = () => {
       const formData = new FormData();
       formData.append("customerName", customerName.trim());
       formData.append("customerPhone", customerPhone.trim());
-      formData.append("customerEmail", customerEmail.trim());
+      formData.append("customerEmail", "");
       formData.append("deliveryType", deliveryType);
       formData.append("deliveryDate", deliveryDate);
       formData.append("deliveryAddress", deliveryAddress.trim());
@@ -338,6 +337,7 @@ const PlaceOrder = () => {
   }
 
   const activePaymentMethods = (settings.paymentMethods || []).filter((pm) => pm.active);
+  const selectedActiveMethod = activePaymentMethods.find((pm) => pm.provider === selectedPaymentMethod) || activePaymentMethods[0];
   const storePhoneDisplay = settings.storePhone || "+251 911 223 344";
 
   return (
@@ -355,19 +355,19 @@ const PlaceOrder = () => {
           <div className="checkout-section-card aura-glass">
             <h2 className="section-card-title">👤 1. Customer & Delivery Information</h2>
             <div className="form-fields-group">
-              <div className="form-group">
-                <label className="form-label">Full Name <span className="label-req">*</span></label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Dawit Tadesse"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required
-                />
-              </div>
-
               <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Full Name <span className="label-req">*</span></label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Dawit Tadesse"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Phone Number <span className="label-req">*</span></label>
                   <input
@@ -378,18 +378,6 @@ const PlaceOrder = () => {
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email (Optional)</label>
-                  <input
-                    type="email"
-                    inputMode="email"
-                    className="form-input"
-                    placeholder="e.g. user@gmail.com"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -566,65 +554,93 @@ const PlaceOrder = () => {
             </div>
           </div>
 
-          {/* 3. Official Payment Accounts with 1-Click Copy */}
-          <div className="checkout-section-card aura-glass">
+          {/* 3. Official Payment Method Symbols & Copyable Details Pop-up */}
+          <div className="checkout-section-card aura-glass payment-method-selector-card">
             <div className="section-card-header-row">
-              <h2 className="section-card-title">💳 3. Official Payment Methods</h2>
-              <span className="copy-hint-pill">1-Click Copy</span>
+              <h2 className="section-card-title">💳 3. Choose Payment Method</h2>
+              <span className="copy-hint-pill">Tap Symbol to View & Copy Account</span>
             </div>
             <p className="payment-instructions-sub">
-              Transfer your declared prepayment deposit (<strong>{effectivePrepayment} {settings.currency}</strong>) to any of the accounts below:
+              Tap any payment provider symbol below to pop up the copyable account number and account name for your transfer:
             </p>
 
-            <div className="payment-accounts-list">
+            {/* Provider Symbols Row / Grid */}
+            <div className="payment-symbols-grid">
               {activePaymentMethods.map((pm, idx) => {
-                const isSelected = selectedPaymentMethod === pm.provider;
-                const isCopied = copiedId === pm._id || copiedId === idx;
+                const isSelected = (selectedPaymentMethod || activePaymentMethods[0]?.provider) === pm.provider;
+                const info = getPaymentProviderInfo(pm.provider);
                 return (
-                  <div
+                  <button
                     key={pm._id || idx}
-                    className={`payment-option-card ${isSelected ? "selected" : ""}`}
+                    type="button"
+                    className={`payment-symbol-chip brand-${info.key} ${isSelected ? "selected" : ""}`}
                     onClick={() => {
                       setSelectedPaymentMethod(pm.provider);
                       setSelectedPaymentAccount(pm.accountNumber);
                     }}
                   >
-                    <div className="pm-card-top">
-                      <div className="pm-card-title-wrap">
-                        <span className="pm-radio-circle"></span>
-                        <strong className="pm-card-provider">{pm.provider}</strong>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-copy-account ${isCopied ? "copied" : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyAccount(pm.accountNumber, pm._id || idx);
-                        }}
-                      >
-                        {isCopied ? "✓ Copied!" : "📋 Copy Number"}
-                      </button>
-                    </div>
-
-                    <div className="pm-card-data-row">
-                      <div className="pm-data-item">
-                        <span className="pm-data-label">Account Name:</span>
-                        <span className="pm-data-val">{pm.accountName}</span>
-                      </div>
-                      <div className="pm-data-item">
-                        <span className="pm-data-label">Account Number:</span>
-                        <span className="pm-data-val code-font">{pm.accountNumber}</span>
-                      </div>
-                    </div>
-
-                    {pm.instructions && (
-                      <p className="pm-instruction-note">💡 {pm.instructions}</p>
-                    )}
-                  </div>
+                    <BankLogo provider={pm.provider} size={28} />
+                    <span className="pm-symbol-name">{pm.provider}</span>
+                    {isSelected && <span className="pm-symbol-check">✓</span>}
+                  </button>
                 );
               })}
             </div>
+
+            {/* Pop-up / Expanded Account Details Card with 1-Click Copy */}
+            {selectedActiveMethod && (
+              <div className="payment-active-detail-popup fade-in">
+                <div className="popup-header-bar">
+                  <div className="popup-provider-badge">
+                    <BankLogo provider={selectedActiveMethod.provider} size={36} />
+                    <div className="popup-provider-titles">
+                      <strong className="popup-provider-title">{selectedActiveMethod.provider}</strong>
+                      <span className="popup-provider-sub">Verified Account Details</span>
+                    </div>
+                  </div>
+                  <span className="popup-ready-pill">✓ 1-Click Copy Number</span>
+                </div>
+
+                <div className="popup-fields-container">
+                  {/* Account Name Row */}
+                  <div className="popup-field-card">
+                    <div className="popup-field-text">
+                      <span className="popup-field-label">Account Name</span>
+                      <strong className="popup-field-value">{selectedActiveMethod.accountName}</strong>
+                    </div>
+                  </div>
+
+                  {/* Account Number Row */}
+                  <div className="popup-field-card highlight-number-card">
+                    <div className="popup-field-text">
+                      <span className="popup-field-label">Account Number</span>
+                      <strong className="popup-field-value code-font account-number-display">
+                        {selectedActiveMethod.accountNumber}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      className={`btn-popup-copy btn-copy-highlight ${copiedId === (selectedActiveMethod._id || selectedActiveMethod.provider) ? "copied" : ""}`}
+                      onClick={() => handleCopyAccount(selectedActiveMethod.accountNumber, selectedActiveMethod._id || selectedActiveMethod.provider)}
+                    >
+                      {copiedId === (selectedActiveMethod._id || selectedActiveMethod.provider) ? "✓ Copied Number!" : "📋 Copy Number"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount to transfer banner */}
+                <div className="popup-transfer-amount-banner">
+                  <span>💰 Transfer Amount (ቀብድ):</span>
+                  <strong>{effectivePrepayment} {settings.currency}</strong>
+                </div>
+
+                {selectedActiveMethod.instructions && (
+                  <p className="popup-instruction-text">
+                    💡 <strong>Instructions:</strong> {selectedActiveMethod.instructions}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

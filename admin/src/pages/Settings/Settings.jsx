@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import "./Settings.css";
 import axios from "axios";
 import { toast } from "react-toastify";
+import BankLogo from "../../components/BankLogos/BankLogos";
 
 const Settings = ({ url }) => {
   const [loading, setLoading] = useState(true);
@@ -581,7 +582,7 @@ const Settings = ({ url }) => {
                     <>
                       <div className="pm-top-row">
                         <div className="pm-provider-badge">
-                          <span className="pm-dot"></span>
+                          <BankLogo provider={pm.provider} size={28} />
                           <strong className="pm-provider-name">{pm.provider}</strong>
                         </div>
 

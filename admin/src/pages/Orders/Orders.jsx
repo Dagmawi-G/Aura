@@ -101,11 +101,19 @@ const Orders = ({ url }) => {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    if (statusFilter === "All") return true;
-    if (statusFilter === "⚡ Urgent Orders") return order.isUrgent === true;
-    return order.status === statusFilter;
-  });
+  const filteredOrders = orders
+    .filter((order) => {
+      if (statusFilter === "All") return true;
+      if (statusFilter === "⚡ Urgent Orders") return order.isUrgent === true;
+      return order.status === statusFilter;
+    })
+    .sort((a, b) => {
+      // Urgent orders always on top
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      // Then newest date first
+      return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
+    });
 
   const getTotalMugs = (items) => {
     if (!items || items.length === 0) return 0;
@@ -169,84 +177,56 @@ const Orders = ({ url }) => {
         <div className="orders-list">
           {filteredOrders.map((order) => {
             const totalMugs = getTotalMugs(order.items);
+            const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
+
             return (
               <div
                 key={order._id}
                 className={`order-card-compact ${order.isUrgent ? "is-urgent-card" : ""}`}
                 onClick={() => navigate(`/orders/${order._id}`)}
-                title="Click to view full order details"
               >
-                {/* Left: Main identity */}
-                <div className="compact-main">
-                  <div className="compact-order-header-row">
-                    <div className="compact-order-num">{order.orderNumber || "ORDER"}</div>
+                {/* Top: Order # + Urgent Flag + Status Pill */}
+                <div className="compact-card-top">
+                  <div className="compact-id-group">
+                    <span className="compact-order-num">{order.orderNumber || "ORDER"}</span>
                     {order.isUrgent && (
                       <span className="urgent-badge-compact">⚡ URGENT</span>
                     )}
                   </div>
-                  <div className="compact-name">{order.customerName}</div>
-                  <div className="compact-phone">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.28h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8a16 16 0 0 0 8 8l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    {order.customerPhone}
-                  </div>
+                  <span className={`status-pill ${getStatusClass(order.status)}`}>
+                    {order.status}
+                  </span>
                 </div>
 
-                {/* Center: Fulfillment + item count + target date */}
-                <div className="compact-meta">
-                  <div className="compact-meta-badges">
-                    <span className={`fulfillment-badge ${order.deliveryType === "Pickup" ? "pickup" : "delivery"}`}>
-                      {order.deliveryType === "Pickup" ? "🏬 Pickup" : "🚚 Delivery"}
+                {/* 3 Core Fields: Name, Due Date, Amount of Mugs */}
+                <div className="compact-card-content">
+                  <div className="compact-info-box name-box">
+                    <span className="compact-label">Customer</span>
+                    <span className="compact-value name-text">👤 {order.customerName}</span>
+                  </div>
+
+                  <div className="compact-info-box due-box">
+                    <span className="compact-label">Due Date</span>
+                    <span className="compact-value due-text">
+                      📅 {order.deliveryDate || "Today"}
+                      <span className={`compact-due-pill ${countdown.status} ${order.isUrgent ? "urgent-due" : ""}`}>
+                        {countdown.badgeText}
+                      </span>
                     </span>
-                    {order.deliveryDate && (() => {
-                      const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
-                      return (
-                        <span
-                          className={`compact-due-pill ${countdown.status} ${order.isUrgent ? "urgent-due" : ""}`}
-                          title={`Requested Date: ${order.deliveryDate} · ${countdown.text}`}
-                        >
-                          {countdown.badgeText} ({order.deliveryDate})
-                        </span>
-                      );
-                    })()}
                   </div>
-                  <div className="compact-items-count">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                      <path d="M16 10a4 4 0 0 1-8 0" />
-                    </svg>
-                    <span>{totalMugs} mug{totalMugs !== 1 ? "s" : ""}</span>
+
+                  <div className="compact-info-box mugs-box">
+                    <span className="compact-label">Amount of Mugs</span>
+                    <span className="compact-value mugs-text">
+                      ☕ {totalMugs} {totalMugs === 1 ? "Mug" : "Mugs"}
+                    </span>
                   </div>
                 </div>
 
-                {/* Financial overview */}
-                <div className="compact-financials">
-                  <span className="compact-prepay-badge">
-                    ቀብድ: <strong>{order.prepaymentAmount || 0} ETB</strong>
-                  </span>
-                  <span className="compact-total-sub">
-                    Total: {order.totalAmount || order.amount} ETB
-                  </span>
-                </div>
-
-                {/* Right: Status + date + arrow */}
-                <div className="compact-status-side">
-                  <span className={`status-pill ${getStatusClass(order.status)}`}>{order.status}</span>
-                  <span className="compact-date">
-                    {new Date(order.createdAt || order.date).toLocaleString("en-ET", {
-                      month: "short", day: "numeric",
-                      hour: "2-digit", minute: "2-digit"
-                    })}
-                  </span>
-                </div>
-
-                {/* Click arrow indicator */}
-                <div className="compact-arrow">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                {/* Bottom Row */}
+                <div className="compact-card-bottom">
+                  <span className="compact-hint-text">View order details</span>
+                  <span className="compact-arrow">→</span>
                 </div>
               </div>
             );

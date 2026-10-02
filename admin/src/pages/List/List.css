@@ -390,6 +390,106 @@
   to { transform: rotate(360deg); }
 }
 
+/* Rank badge */
+.product-rank-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(38, 23, 13, 0.88);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.reorder-info-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.syncing-order-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  animation: pulse-subtle 1.5s infinite ease-in-out;
+}
+
+/* Position Reorder Bar */
+.product-reorder-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 0.2rem;
+}
+
+.reorder-bar-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reorder-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-order-arrow {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.btn-order-arrow:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-order-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-order-top {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.btn-order-top:hover {
+  background: #fde68a;
+  color: #78350f;
+}
+
 @media (max-width: 640px) {
   .catalog-header-wrap {
     flex-direction: column;
@@ -400,6 +500,9 @@
   .catalog-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+  .reorder-info-hint {
+    font-size: 0.76rem;
   }
   .category-pills {
     width: 100%;

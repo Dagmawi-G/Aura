@@ -213,14 +213,17 @@ const TrackOrder = () => {
           {orders.map((order) => {
             const stepIdx = getStepActiveIndex(order.status, order.deliveryType);
             const isPickup = order.deliveryType === "Pickup";
+            const totalMugs = order.items?.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0) || 0;
+            const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
 
             return (
-              <div key={order._id} className="tracked-order-card aura-glass">
+              <div key={order._id} className={`tracked-order-card aura-glass ${order.isUrgent ? "is-urgent-track-card" : ""}`}>
                 {/* Order Top Bar */}
                 <div className="tracked-top-bar">
                   <div className="order-id-block">
                     <span className="order-ref-label">Order Number:</span>
                     <strong className="order-ref-val">{order.orderNumber}</strong>
+                    {order.isUrgent && <span className="track-urgent-pill">⚡ URGENT</span>}
                   </div>
 
                   <div className="order-status-badge-wrap">
@@ -230,15 +233,40 @@ const TrackOrder = () => {
                   </div>
                 </div>
 
-                {/* Progress Tracker Stepper */}
+                {/* Compact Highlights Banner (Name, Due Date, Amount of Mugs) */}
+                <div className="track-summary-strip">
+                  <div className="summary-item name-item">
+                    <span className="summary-label">Customer</span>
+                    <span className="summary-value name-val">👤 {order.customerName}</span>
+                  </div>
+
+                  <div className="summary-item due-item">
+                    <span className="summary-label">Due Date</span>
+                    <span className="summary-value due-val">
+                      📅 {order.deliveryDate || "Today"}
+                      <span className={`track-countdown-badge ${countdown.status}`}>
+                        {countdown.text}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="summary-item mugs-item">
+                    <span className="summary-label">Amount of Mugs</span>
+                    <span className="summary-value mugs-val">
+                      ☕ {totalMugs} {totalMugs === 1 ? "Mug" : "Mugs"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Tracker Stepper (Compact & Clean) */}
                 <div className="stepper-progress-wrap">
                   <div className="stepper-steps">
                     {[
-                      { title: "Proof Submitted", icon: "🧾" },
-                      { title: "Payment Verified", icon: "✅" },
-                      { title: "Custom Printing", icon: "🎨" },
-                      { title: isPickup ? "Ready for Pickup" : "Out for Delivery", icon: isPickup ? "🏬" : "🚚" },
-                      { title: "Completed", icon: "🎉" }
+                      { title: "Proof Sent", icon: "🧾" },
+                      { title: "Verified", icon: "✅" },
+                      { title: "Printing", icon: "🎨" },
+                      { title: isPickup ? "Pickup" : "Delivery", icon: isPickup ? "🏬" : "🚚" },
+                      { title: "Done", icon: "🎉" }
                     ].map((step, idx) => {
                       const isCompleted = idx < stepIdx;
                       const isCurrent = idx === stepIdx;
@@ -255,66 +283,61 @@ const TrackOrder = () => {
                   </div>
                 </div>
 
-                {/* Order Details Grid */}
-                <div className="tracked-details-grid">
-                  <div className="details-col">
-                    <h4 className="details-col-title">👤 Customer & Fulfillment</h4>
-                    <p><strong>Name:</strong> {order.customerName}</p>
-                    <p><strong>Phone:</strong> {order.customerPhone}</p>
-                    <p><strong>Fulfillment:</strong> {order.deliveryType}</p>
-                    {order.deliveryDate && (() => {
-                      const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
-                      return (
-                        <p className="track-target-date-row">
-                          <strong>Target Date:</strong> 📅 {order.deliveryDate}
-                          <span className={`track-countdown-badge ${countdown.status}`}>
-                            {countdown.text}
-                          </span>
-                        </p>
-                      );
-                    })()}
-                    {order.deliveryType === "Delivery" && (
-                      <>
-                        <p><strong>Distance:</strong> {order.distanceKm} km</p>
-                        <p><strong>Address:</strong> {order.deliveryAddress}</p>
-                      </>
-                    )}
-                  </div>
+                {/* Expandable / Collapsible Details on Mobile */}
+                <details className="track-details-accordion">
+                  <summary className="track-accordion-trigger">
+                    <span>View Full Customization & Payment Details</span>
+                    <span className="accordion-arrow">▾</span>
+                  </summary>
 
-                  <div className="details-col">
-                    <h4 className="details-col-title">✨ Customized Items ({order.items?.length})</h4>
-                    <div className="tracked-items-list">
-                      {order.items?.map((item, idx) => (
-                        <div key={idx} className="tracked-item-box">
-                          <div className="tracked-item-top">
-                            <span>{item.quantity}x</span>
-                            <strong>{item.name}</strong>
+                  <div className="tracked-details-grid">
+                    <div className="details-col">
+                      <h4 className="details-col-title">👤 Contact & Fulfillment</h4>
+                      <p><strong>Phone:</strong> {order.customerPhone}</p>
+                      <p><strong>Fulfillment:</strong> {order.deliveryType}</p>
+                      {order.deliveryType === "Delivery" && (
+                        <>
+                          <p><strong>Distance:</strong> {order.distanceKm} km</p>
+                          <p><strong>Address:</strong> {order.deliveryAddress}</p>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="details-col">
+                      <h4 className="details-col-title">✨ Customized Items ({order.items?.length})</h4>
+                      <div className="tracked-items-list">
+                        {order.items?.map((item, idx) => (
+                          <div key={idx} className="tracked-item-box">
+                            <div className="tracked-item-top">
+                              <span>{item.quantity}x</span>
+                              <strong>{item.name}</strong>
+                            </div>
+                            {item.customText && (
+                              <p className="custom-print-text">
+                                🔤 Print: <strong>"{item.customText}"</strong>
+                              </p>
+                            )}
+                            {item.selectedStickers && item.selectedStickers.length > 0 && (
+                              <p className="custom-stickers-text">
+                                ✨ Stickers: {item.selectedStickers.map((s) => s.name).join(", ")}
+                              </p>
+                            )}
                           </div>
-                          {item.customText && (
-                            <p className="custom-print-text">
-                              🔤 Print: <strong>"{item.customText}"</strong>
-                            </p>
-                          )}
-                          {item.selectedStickers && item.selectedStickers.length > 0 && (
-                            <p className="custom-stickers-text">
-                              ✨ Stickers: {item.selectedStickers.map((s) => s.name).join(", ")}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="details-col">
+                      <h4 className="details-col-title">💳 Payment Summary</h4>
+                      <p><strong>Method:</strong> {order.paymentMethod}</p>
+                      <p><strong>Items Subtotal:</strong> {order.subtotal} {settings.currency}</p>
+                      <p><strong>Delivery Fee:</strong> {order.deliveryFee} {settings.currency}</p>
+                      <p className="total-highlight">
+                        <strong>Total:</strong> {order.totalAmount} {settings.currency}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="details-col">
-                    <h4 className="details-col-title">💳 Payment Summary</h4>
-                    <p><strong>Method:</strong> {order.paymentMethod}</p>
-                    <p><strong>Items Subtotal:</strong> {order.subtotal} {settings.currency}</p>
-                    <p><strong>Delivery Fee:</strong> {order.deliveryFee} {settings.currency}</p>
-                    <p className="total-highlight">
-                      <strong>Total:</strong> {order.totalAmount} {settings.currency}
-                    </p>
-                  </div>
-                </div>
+                </details>
               </div>
             );
           })}

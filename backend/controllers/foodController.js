@@ -79,11 +79,41 @@ const updateFood = async (req, res) => {
 // List all food items
 const listFood = async (req, res) => {
   try {
-    const foods = await foodModel.find({}).sort({ createdAt: -1 });
+    const foods = await foodModel.find({}).sort({ order: 1, createdAt: -1 });
     res.json({ success: true, data: foods });
   } catch (error) {
     console.error("Error listing food items:", error);
     res.status(500).json({ success: false, message: "Error fetching items" });
+  }
+};
+
+// Reorder food items in bulk
+const reorderFood = async (req, res) => {
+  try {
+    const { items } = req.body; // array of item IDs or { id, order } objects in desired order
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ success: false, message: "Invalid items array" });
+    }
+
+    const bulkOps = items.map((item, index) => {
+      const id = typeof item === "string" ? item : (item.id || item._id);
+      const orderNum = typeof item === "object" && item.order !== undefined ? item.order : index;
+      return {
+        updateOne: {
+          filter: { _id: id },
+          update: { $set: { order: orderNum } }
+        }
+      };
+    });
+
+    if (bulkOps.length > 0) {
+      await foodModel.bulkWrite(bulkOps);
+    }
+
+    res.json({ success: true, message: "Item order updated successfully" });
+  } catch (error) {
+    console.error("Error reordering food items:", error);
+    res.status(500).json({ success: false, message: "Error updating order: " + error.message });
   }
 };
 
@@ -106,5 +136,5 @@ const removeFood = async (req, res) => {
   }
 };
 
-export { addFood, updateFood, listFood, removeFood };
+export { addFood, updateFood, listFood, reorderFood, removeFood };
 
