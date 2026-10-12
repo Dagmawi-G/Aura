@@ -136,3 +136,8 @@ input, textarea, select {
     padding: 0 1rem calc(5.5rem + var(--safe-bottom));
   }
 }
+
+/* Ensure React-Toastify notifications always appear above modals, sheets, and backdrops */
+.Toastify__toast-container {
+  z-index: 999999 !important;
+}

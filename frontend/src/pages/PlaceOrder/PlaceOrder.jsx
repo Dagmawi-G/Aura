@@ -49,13 +49,15 @@ const PlaceOrder = () => {
   const total = subtotal + deliveryFee + urgentFee;
   const totalItemCount = getTotalItemCount ? getTotalItemCount() : cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  // When toggling urgent order, auto-set date to today
+  // When toggling urgent order, auto-set date to today, or empty on uncheck
   const handleUrgentToggle = (checked) => {
     setIsUrgent(checked);
     if (checked) {
       const todayStr = new Date().toISOString().split("T")[0];
       setDeliveryDate(todayStr);
       toast.info(`⚡ Urgent Same-Day Order enabled (+${configuredUrgentFee} ${settings.currency})`);
+    } else {
+      setDeliveryDate("");
     }
   };
 
@@ -146,7 +148,7 @@ const PlaceOrder = () => {
     }
 
     if (!deliveryDate) {
-      toast.error(`Please select your preferred ${deliveryType === "Pickup" ? "pickup" : "delivery"} date`);
+      toast.error("Please select your delivery/pickup date");
       return;
     }
 
@@ -401,9 +403,6 @@ const PlaceOrder = () => {
                         <strong className="urgent-title">Urgent Order (Same-Day Express)</strong>
                         <span className="urgent-fee-tag">+{configuredUrgentFee} {settings.currency}</span>
                       </div>
-                      <p className="urgent-subtext">
-                        Need it done and delivered today? Priority queue printing & express same-day dispatch.
-                      </p>
                     </div>
                   </label>
                 </div>
@@ -429,7 +428,7 @@ const PlaceOrder = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">
-                    📅 {deliveryType === "Pickup" ? "Needed / Pickup Date" : "Preferred Delivery Date"} <span className="label-req">*</span>
+                    📅 Delivery / Pickup Date <span className="label-req">*</span>
                   </label>
                   <input
                     type="date"
