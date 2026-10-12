@@ -38,14 +38,27 @@ const Stickers = ({ url }) => {
       toast.error("File size exceeds 10MB");
       return;
     }
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!validTypes.includes(selected.type.toLowerCase())) {
+
+    const isImage = (selected.type && selected.type.startsWith("image/")) ||
+      /\.(jpe?g|png|webp|gif|svg|bmp|jfif)$/i.test(selected.name);
+    if (!isImage) {
       toast.error("Please upload photo/graphic formats only (SVG, PNG, JPG, WEBP, GIF)");
       return;
     }
 
     setFile(selected);
-    setPreview(URL.createObjectURL(selected));
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      setPreview(loadEvent.target.result);
+    };
+    reader.onerror = () => {
+      try {
+        setPreview(URL.createObjectURL(selected));
+      } catch (err) {
+        console.error("Preview creation error:", err);
+      }
+    };
+    reader.readAsDataURL(selected);
   };
 
   const handleUpload = async (e) => {

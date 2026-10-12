@@ -449,7 +449,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   type="text"
                   maxLength={30}
                   className="form-input custom-print-input"
-                  placeholder="e.g. AURA 2026 / YOUR NAME / EST. 94"
+                  placeholder="Printing name"
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                 />

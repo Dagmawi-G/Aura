@@ -119,9 +119,9 @@ const PlaceOrder = () => {
     setTimeout(() => setCopiedRef(false), 2500);
   };
 
-  // Payment Screenshot Upload Handler
+  // Payment Screenshot Upload Handler (uses FileReader base64 for 100% reliable previews)
   const handleProofChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
@@ -129,14 +129,28 @@ const PlaceOrder = () => {
       return;
     }
 
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif", "image/svg+xml"];
-    if (!validTypes.includes(file.type.toLowerCase())) {
+    const isImage = (file.type && file.type.startsWith("image/")) ||
+      /\.(jpe?g|png|webp|gif|svg|bmp|jfif|heic)$/i.test(file.name);
+    if (!isImage) {
       toast.error("Please upload an image screenshot (JPEG, PNG, WEBP).");
       return;
     }
 
     setPaymentProofFile(file);
-    setPaymentProofPreview(URL.createObjectURL(file));
+
+    // Read as Base64 Data URL so the image loads reliably in all browsers
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      setPaymentProofPreview(uploadEvent.target.result);
+    };
+    reader.onerror = () => {
+      try {
+        setPaymentProofPreview(URL.createObjectURL(file));
+      } catch (err) {
+        console.error("Preview creation error:", err);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmitOrder = async (e) => {
@@ -726,8 +740,27 @@ const PlaceOrder = () => {
               <label htmlFor="payment-proof-input" className="proof-dropzone-label">
                 {paymentProofPreview ? (
                   <div className="proof-preview-container">
-                    <img src={paymentProofPreview} alt="Transfer Proof Preview" className="proof-img-tag" />
+                    <img
+                      src={paymentProofPreview}
+                      alt="Transfer Proof Preview"
+                      className="proof-img-tag"
+                      onError={(e) => {
+                        if (paymentProofFile && !e.target.dataset.retried) {
+                          e.target.dataset.retried = "true";
+                          try {
+                            e.target.src = URL.createObjectURL(paymentProofFile);
+                          } catch (err) {
+                            console.error("Preview fallback error:", err);
+                          }
+                        }
+                      }}
+                    />
                     <div className="proof-change-overlay">Click to change screenshot</div>
+                    {paymentProofFile && (
+                      <div className="proof-file-badge">
+                        📎 {paymentProofFile.name}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="proof-empty-container">
