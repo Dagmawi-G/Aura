@@ -1397,6 +1397,7 @@
   --toastify-z-index: 99999999 !important;
 }
 
+#toast-root,
 .Toastify,
 .Toastify__toast-container,
 .Toastify__toast {

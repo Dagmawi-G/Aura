@@ -138,6 +138,11 @@ input, textarea, select {
 }
 
 /* Ensure React-Toastify notifications always appear above modals, sheets, and backdrops */
+#toast-root {
+  position: relative;
+  z-index: 99999999 !important;
+}
+
 :root {
   --toastify-z-index: 99999999 !important;
 }
