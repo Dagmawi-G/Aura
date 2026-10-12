@@ -23,6 +23,7 @@ const App = () => {
         draggable
         pauseOnHover
         theme="light"
+        style={{ zIndex: 99999999 }}
       />
       <Navbar />
       <div className="app">

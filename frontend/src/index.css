@@ -138,6 +138,19 @@ input, textarea, select {
 }
 
 /* Ensure React-Toastify notifications always appear above modals, sheets, and backdrops */
-.Toastify__toast-container {
-  z-index: 999999 !important;
+:root {
+  --toastify-z-index: 99999999 !important;
+}
+
+.Toastify,
+.Toastify__toast-container,
+.Toastify__toast-container--top-right,
+.Toastify__toast-container--top-left,
+.Toastify__toast-container--top-center,
+.Toastify__toast-container--bottom-left,
+.Toastify__toast-container--bottom-center,
+.Toastify__toast-container--bottom-right,
+.Toastify__toast {
+  z-index: 99999999 !important;
+  -webkit-transform: translate3d(0, 0, 99999999px) !important;
 }

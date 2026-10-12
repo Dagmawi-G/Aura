@@ -4,7 +4,7 @@
   background: rgba(12, 10, 9, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 10000;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1172,7 +1172,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(4px);
-  z-index: 100000;
+  z-index: 2500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1390,6 +1390,18 @@
   50% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15);
   }
+}
+
+/* Ensure React-Toastify notifications display on top of modal backdrop */
+:root {
+  --toastify-z-index: 99999999 !important;
+}
+
+.Toastify,
+.Toastify__toast-container,
+.Toastify__toast {
+  z-index: 99999999 !important;
+  -webkit-transform: translate3d(0, 0, 99999999px) !important;
 }
 
 
