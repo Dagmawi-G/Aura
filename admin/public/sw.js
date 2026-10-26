@@ -39,22 +39,38 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const orderUrl = event.notification.data?.url || "/orders";
+  let rawUrl = event.notification.data?.url || "/#/orders";
+
+  // Ensure the URL always uses HashRouter format '/#/orders/...'
+  let targetPath = rawUrl;
+  if (!targetPath.startsWith("http")) {
+    if (targetPath.startsWith("/#")) {
+      // already has /#
+    } else if (targetPath.startsWith("#")) {
+      targetPath = "/" + targetPath;
+    } else {
+      // e.g. /orders/123 -> /#/orders/123
+      targetPath = "/#" + (targetPath.startsWith("/") ? targetPath : "/" + targetPath);
+    }
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       // If a window is already open, navigate & focus it
       for (const client of windowClients) {
         if ("focus" in client) {
-          if ("navigate" in client && orderUrl) {
-            client.navigate(orderUrl);
+          const clientOrigin = client.url ? new URL(client.url).origin : self.location.origin;
+          const fullUrl = targetPath.startsWith("http") ? targetPath : `${clientOrigin}${targetPath}`;
+          if ("navigate" in client) {
+            client.navigate(fullUrl);
           }
           return client.focus();
         }
       }
       // Otherwise open a new window
       if (self.clients.openWindow) {
-        return self.clients.openWindow(orderUrl);
+        const fullUrl = targetPath.startsWith("http") ? targetPath : `${self.location.origin}${targetPath}`;
+        return self.clients.openWindow(fullUrl);
       }
     })
   );

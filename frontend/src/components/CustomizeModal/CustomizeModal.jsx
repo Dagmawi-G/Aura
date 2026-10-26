@@ -43,7 +43,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   const [validationError, setValidationError] = useState("");
 
   const [customText, setCustomText] = useState("");
-  const [fontStyle, setFontStyle] = useState("Serif");
+  const fontStyle = "modern";
   const [selectedStickers, setSelectedStickers] = useState([]);
   const [stickerTab, setStickerTab] = useState("Mix"); // 'Mix' or 'Fixed'
   const [isOutsideAddis, setIsOutsideAddis] = useState(false);
@@ -335,11 +335,38 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   };
 
   const toggleSticker = (sticker) => {
-    const exists = selectedStickers.find((s) => s.name === sticker.name);
-    if (exists) {
-      setSelectedStickers(selectedStickers.filter((s) => s.name !== sticker.name));
+    const isFixed = (sticker.stickerType || "Mix") === "Fixed" || fixedStickers.some((f) => f.name === sticker.name) || stickerTab === "Fixed";
+    const isAlreadySelected = selectedStickers.some((s) => s.name === sticker.name);
+
+    if (isFixed) {
+      if (isAlreadySelected) {
+        setSelectedStickers([]);
+      } else {
+        // If you choose the fixed sticker you cannot add other stickers
+        setSelectedStickers([
+          { name: sticker.name, image: sticker.image, id: sticker._id, stickerType: "Fixed" }
+        ]);
+        toast.info(`Selected "${sticker.name}". Fixed sticker chosen (cannot add other stickers).`);
+      }
     } else {
-      setSelectedStickers([...selectedStickers, { name: sticker.name, image: sticker.image, id: sticker._id }]);
+      // If a Fixed sticker is currently selected, you cannot add other stickers
+      const hasFixedSelected = selectedStickers.some(
+        (s) => s.stickerType === "Fixed" || fixedStickers.some((f) => f.name === s.name)
+      );
+      if (hasFixedSelected) {
+        toast.warning("A Fixed sticker is already selected. You cannot add other stickers unless you deselect it first.");
+        return;
+      }
+
+      if (isAlreadySelected) {
+        setSelectedStickers(selectedStickers.filter((s) => s.name !== sticker.name));
+      } else {
+        // Mix stickers can choose multiple stickers
+        setSelectedStickers([
+          ...selectedStickers,
+          { name: sticker.name, image: sticker.image, id: sticker._id, stickerType: "Mix" }
+        ]);
+      }
     }
   };
 
@@ -383,7 +410,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
     }
 
     if (deliveryType === "Delivery" && isOutsideAddis) {
-      toast.error("⚠️ We do not have delivery outside Addis Ababa. Please choose Store Pickup or mark an address within Addis Ababa.");
+      toast.error("Addis Ababa Delivery Only: We do not offer delivery outside Addis Ababa");
       return;
     }
     setValidationError("");
@@ -507,7 +534,17 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                 <div className="mix-theme-note-card">
                   <span className="mix-note-icon">💡</span>
                   <div className="mix-note-text">
-                    <strong>Note:</strong> Consider the theme when choosing your stickers.
+                    <strong>Note:</strong> Consider the theme when choosing your stickers (Multiple stickers allowed).
+                  </div>
+                </div>
+              )}
+
+              {/* Fixed Single Choice Guidance Note */}
+              {stickerTab === "Fixed" && (
+                <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
+                  <span className="mix-note-icon">📌</span>
+                  <div className="mix-note-text" style={{ color: "#92400e" }}>
+                    <strong>Note:</strong> If you choose a Fixed sticker, you cannot add other stickers (Single sticker only).
                   </div>
                 </div>
               )}
@@ -574,19 +611,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   <span className="note-icon">ℹ️</span>
                   <span><strong>Note:</strong> Use only English words and numbers (Max 7 characters).</span>
                 </div>
-
-                <div className="font-options">
-                  {["Serif", "Modern", "Street", "Script"].map((font) => (
-                    <button
-                      key={font}
-                      type="button"
-                      className={`font-pill ${fontStyle === font ? "active" : ""}`}
-                      onClick={() => setFontStyle(font)}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -600,7 +624,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
               <div className="addis-delivery-notice-banner">
                 <span className="addis-notice-icon">⚠️</span>
                 <div className="addis-notice-text">
-                  <strong>Outside Addis Ababa:</strong> We do NOT have delivery outside Addis Ababa. Delivery is available strictly within Addis Ababa. For locations outside Addis Ababa, please select <strong>🏬 Store Pickup</strong>.
+                  <strong>Addis Ababa Delivery Only: We do not offer delivery outside Addis Ababa</strong>
                 </div>
               </div>
 
@@ -716,8 +740,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                     <div className="outside-addis-warning-box">
                       <span>⚠️</span>
                       <div>
-                        <strong>Location outside Addis Ababa detected!</strong>
-                        <p>We do not have delivery outside Addis Ababa. Please select <strong>Store Pickup</strong> or drag your pin within Addis Ababa.</p>
+                        <strong>Addis Ababa Delivery Only: We do not offer delivery outside Addis Ababa</strong>
                       </div>
                     </div>
                   )}

@@ -65,7 +65,7 @@ export const notifyAdminsOfOrder = async (order) => {
       isUrgent,
       customerName: order.customerName,
       totalAmount: order.totalAmount,
-      url: `/orders/${order._id}`
+      url: order._id && order._id !== "test-id" ? `/#/orders/${order._id}` : "/#/orders"
     }
   });
 

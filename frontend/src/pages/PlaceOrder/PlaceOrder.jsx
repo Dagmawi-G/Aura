@@ -26,7 +26,6 @@ const PlaceOrder = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerSecondaryPhone, setCustomerSecondaryPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -184,7 +183,7 @@ const PlaceOrder = () => {
       formData.append("customerName", customerName.trim());
       formData.append("customerPhone", customerPhone.trim());
       formData.append("secondaryPhone", customerSecondaryPhone.trim());
-      formData.append("customerEmail", customerEmail.trim());
+      formData.append("customerEmail", "");
       formData.append("deliveryType", deliveryType);
       formData.append("deliveryDate", deliveryDate);
       formData.append("deliveryAddress", deliveryAddress.trim());
@@ -387,7 +386,7 @@ const PlaceOrder = () => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Dawit Tadesse (Your real name)"
+                  placeholder="Name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   required
@@ -423,37 +422,6 @@ const PlaceOrder = () => {
                   />
                 </div>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Email Address (Optional)</label>
-                <input
-                  type="email"
-                  inputMode="email"
-                  className="form-input"
-                  placeholder="e.g. user@gmail.com"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                />
-              </div>
-
-              {deliveryType === "Delivery" && (
-                <div className="addis-delivery-notice" style={{
-                  background: "rgba(239, 68, 68, 0.08)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                  borderRadius: "10px",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  fontSize: "13px",
-                  color: "#ef4444"
-                }}>
-                  <span style={{ fontSize: "18px" }}>📍</span>
-                  <div>
-                    <strong>Addis Ababa Delivery Only:</strong> We do not offer delivery outside Addis Ababa. If you are located outside Addis Ababa, please choose <strong>Store Pickup</strong>.
-                  </div>
-                </div>
-              )}
 
               <div className="form-row">
                 <div className="form-group">

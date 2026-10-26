@@ -138,11 +138,15 @@ const NotificationModal = ({ url }) => {
                       icon: "/favicon.ico",
                       badge: "/favicon.ico",
                       vibrate: isUrgent ? [300, 100, 300, 100, 400] : [200, 100, 200],
-                      data: { url: `/orders/${latestNew._id}` }
+                      data: { url: `/#/orders/${latestNew._id}` }
                     });
                   });
                 } else {
-                  new Notification(title, { body, icon: "/favicon.ico" });
+                  const notif = new Notification(title, { body, icon: "/favicon.ico" });
+                  notif.onclick = () => {
+                    window.focus();
+                    window.location.hash = `#/orders/${latestNew._id}`;
+                  };
                 }
               } catch (e) {
                 console.warn("Notification error:", e);
