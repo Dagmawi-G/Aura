@@ -18,14 +18,17 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const isUrgent = data.data?.isUrgent || data.title?.toLowerCase().includes("urgent");
+  const isUrgent = Boolean(data.data?.isUrgent || data.title?.toLowerCase().includes("urgent"));
   const title = data.title || (isUrgent ? "New Urgent Order" : "New Order");
   const body = data.body || "A new customer order has arrived on Aura Collection.";
 
+  // Icons for normal vs urgent orders
+  const icon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";
+
   const options = {
     body: body,
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: data.icon || icon,
+    badge: icon,
     vibrate: isUrgent ? [300, 100, 300, 100, 400] : [200, 100, 200],
     tag: data.data?.orderNumber || "aura-order-notif",
     renotify: true,

@@ -1,9 +1,59 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import "./Settings.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import BankLogo from "../../components/BankLogos/BankLogos";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet's broken default icon paths in Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
+
+const makeStoreMarkerIcon = () =>
+  L.divIcon({
+    className: "admin-store-pin",
+    html: `
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+        cursor: grab;
+      ">
+        <div style="
+          background: #ef4444;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 11px;
+          padding: 3px 8px;
+          border-radius: 12px;
+          border: 2px solid #ffffff;
+          white-space: nowrap;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          margin-bottom: 2px;
+        ">
+          🏬 Store Origin
+        </div>
+        <div style="
+          width: 18px;
+          height: 18px;
+          background: #ef4444;
+          border: 3px solid #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+        "></div>
+      </div>
+    `,
+    iconSize: [96, 46],
+    iconAnchor: [48, 42],
+    popupAnchor: [0, -42],
+  });
 
 const Settings = ({ url }) => {
   const [loading, setLoading] = useState(true);
@@ -20,6 +70,12 @@ const Settings = ({ url }) => {
     currency: "ETB",
     paymentMethods: []
   });
+
+  // Map refs & states
+  const mapRef = useRef(null);
+  const mapContainerRef = useRef(null);
+  const storeMarkerRef = useRef(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   // Modal / Form state for adding new payment method
   const [showAddMethod, setShowAddMethod] = useState(false);
@@ -74,26 +130,130 @@ const Settings = ({ url }) => {
     fetchSettings();
   }, []);
 
-  const handleLocationDetect = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setSettings((prev) => ({
-            ...prev,
-            storeCoordinates: {
-              lat: Number(position.coords.latitude.toFixed(5)),
-              lng: Number(position.coords.longitude.toFixed(5))
-            }
-          }));
-          toast.success("Detected store coordinates from current location!");
-        },
-        (error) => {
-          toast.error("Could not get current location: " + error.message);
-        }
-      );
-    } else {
-      toast.error("Geolocation not supported by your browser");
+  // Helper to place or update store pin
+  const placeStorePin = (lat, lng, pan = false) => {
+    const numLat = parseFloat(lat);
+    const numLng = parseFloat(lng);
+    if (isNaN(numLat) || isNaN(numLng)) return;
+
+    const roundedLat = Number(numLat.toFixed(5));
+    const roundedLng = Number(numLng.toFixed(5));
+
+    setSettings((prev) => ({
+      ...prev,
+      storeCoordinates: { lat: roundedLat, lng: roundedLng }
+    }));
+
+    if (mapRef.current) {
+      if (storeMarkerRef.current) {
+        storeMarkerRef.current.setLatLng([roundedLat, roundedLng]);
+      } else {
+        const marker = L.marker([roundedLat, roundedLng], {
+          icon: makeStoreMarkerIcon(),
+          draggable: true,
+          title: "Store Location (drag to adjust)"
+        }).addTo(mapRef.current);
+
+        marker.bindPopup(`<b>🏬 Store Location</b><br><small>Drag to adjust precise location</small>`);
+
+        marker.on("dragend", (e) => {
+          const pos = e.target.getLatLng();
+          placeStorePin(pos.lat, pos.lng, false);
+          toast.info("📍 Store pin moved!");
+        });
+
+        storeMarkerRef.current = marker;
+      }
+
+      if (pan) {
+        mapRef.current.setView([roundedLat, roundedLng], 15);
+      }
     }
+  };
+
+  // Initialize Map when loading finishes
+  useEffect(() => {
+    if (loading) return;
+
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current) return;
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+        return;
+      }
+
+      const initialLat = settings.storeCoordinates?.lat || 8.9956;
+      const initialLng = settings.storeCoordinates?.lng || 38.7891;
+
+      const map = L.map(mapContainerRef.current, {
+        center: [initialLat, initialLng],
+        zoom: 14,
+        zoomControl: true,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Create draggable store marker
+      const marker = L.marker([initialLat, initialLng], {
+        icon: makeStoreMarkerIcon(),
+        draggable: true,
+        title: "Store Location (drag to adjust)"
+      }).addTo(map);
+
+      marker.bindPopup(`<b>🏬 Store Location</b><br><small>Drag pin to fine-tune</small>`);
+
+      marker.on("dragend", (e) => {
+        const pos = e.target.getLatLng();
+        placeStorePin(pos.lat, pos.lng, false);
+        toast.info("📍 Store pin moved!");
+      });
+
+      // Clicking anywhere on map places/moves store pin
+      map.on("click", (e) => {
+        placeStorePin(e.latlng.lat, e.latlng.lng, false);
+        toast.success("📍 Store location pinned on map! Drag to fine-tune.");
+      });
+
+      storeMarkerRef.current = marker;
+      mapRef.current = map;
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // Clean up map when component unmounts
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        storeMarkerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleLocationDetect = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocation not supported by your browser");
+      return;
+    }
+
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setDetectingLocation(false);
+        const { latitude, longitude } = position.coords;
+        placeStorePin(latitude, longitude, true);
+        toast.success("🧭 Store location pinned to your current GPS position!");
+      },
+      (error) => {
+        setDetectingLocation(false);
+        toast.error("Could not get current location: " + error.message);
+      }
+    );
   };
 
   const handleSaveSettings = async (e) => {
@@ -247,6 +407,43 @@ const Settings = ({ url }) => {
               />
             </div>
 
+            {/* ── Interactive Store Location Map ── */}
+            <div className="store-map-wrapper">
+              <div className="store-map-header">
+                <div>
+                  <label className="form-label" style={{ marginBottom: "2px" }}>
+                    📍 Pin Store Location on Map
+                  </label>
+                  <p className="store-map-sub">
+                    Tap anywhere on the map or drag the pin to set your store location. Delivery fees are computed from this pin.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-gps-store-detect"
+                  onClick={handleLocationDetect}
+                  disabled={detectingLocation}
+                >
+                  {detectingLocation ? "Locating..." : "📍 Use My GPS"}
+                </button>
+              </div>
+
+              {/* Map container */}
+              <div
+                ref={mapContainerRef}
+                className="store-leaflet-map-container"
+                id="admin-store-map"
+              />
+
+              <div className="store-pinned-coords-badge">
+                <span className="dot-live"></span>
+                <span>
+                  <strong>Pinned Coordinates:</strong> {settings.storeCoordinates?.lat ?? 8.9956},{" "}
+                  {settings.storeCoordinates?.lng ?? 38.7891}
+                </span>
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Latitude</label>
@@ -254,16 +451,11 @@ const Settings = ({ url }) => {
                   type="number"
                   step="any"
                   className="form-input"
-                  value={settings.storeCoordinates?.lat || ""}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      storeCoordinates: {
-                        ...settings.storeCoordinates,
-                        lat: parseFloat(e.target.value) || 0
-                      }
-                    })
-                  }
+                  value={settings.storeCoordinates?.lat ?? ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) placeStorePin(val, settings.storeCoordinates?.lng || 0, true);
+                  }}
                   required
                 />
               </div>
@@ -274,28 +466,15 @@ const Settings = ({ url }) => {
                   type="number"
                   step="any"
                   className="form-input"
-                  value={settings.storeCoordinates?.lng || ""}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      storeCoordinates: {
-                        ...settings.storeCoordinates,
-                        lng: parseFloat(e.target.value) || 0
-                      }
-                    })
-                  }
+                  value={settings.storeCoordinates?.lng ?? ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) placeStorePin(settings.storeCoordinates?.lat || 0, val, true);
+                  }}
                   required
                 />
               </div>
             </div>
-
-            <button
-              type="button"
-              className="btn-detect-location"
-              onClick={handleLocationDetect}
-            >
-              <span>🧭</span> Detect My Location Coordinates
-            </button>
 
             {/* ── Delivery Fee Tiers ── */}
             <div className="tiers-section">

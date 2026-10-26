@@ -54,11 +54,13 @@ export const notifyAdminsOfOrder = async (order) => {
     ? `🚨 Order #${order.orderNumber} from ${order.customerName} (${order.totalAmount} ETB) - Same-Day Express!`
     : `📦 Order #${order.orderNumber} from ${order.customerName} (${order.totalAmount} ETB).`;
 
+  const notifIcon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";
+
   const notificationPayload = JSON.stringify({
     title,
     body,
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: notifIcon,
+    badge: notifIcon,
     data: {
       orderId: order._id,
       orderNumber: order.orderNumber,

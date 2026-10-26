@@ -130,19 +130,21 @@ const NotificationModal = ({ url }) => {
                 ? `⚡ Urgent Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB).`
                 : `Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB).`;
 
+              const notifIcon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";
+
               try {
                 if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                   navigator.serviceWorker.ready.then((reg) => {
                     reg.showNotification(title, {
                       body,
-                      icon: "/favicon.ico",
-                      badge: "/favicon.ico",
+                      icon: notifIcon,
+                      badge: notifIcon,
                       vibrate: isUrgent ? [300, 100, 300, 100, 400] : [200, 100, 200],
                       data: { url: `/#/orders/${latestNew._id}` }
                     });
                   });
                 } else {
-                  const notif = new Notification(title, { body, icon: "/favicon.ico" });
+                  const notif = new Notification(title, { body, icon: notifIcon });
                   notif.onclick = () => {
                     window.focus();
                     window.location.hash = `#/orders/${latestNew._id}`;
@@ -295,8 +297,13 @@ const NotificationModal = ({ url }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="order-alert-header">
-              <div className="order-alert-badge">
-                {activeAlert.isUrgent ? "🚨 NEW URGENT ORDER" : "🛍️ NEW ORDER"}
+              <div className="order-alert-badge" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <img
+                  src={activeAlert.isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png"}
+                  alt={activeAlert.isUrgent ? "Urgent Icon" : "Normal Icon"}
+                  style={{ width: "24px", height: "24px", borderRadius: "6px", objectFit: "contain" }}
+                />
+                <span>{activeAlert.isUrgent ? "NEW URGENT ORDER" : "NEW ORDER"}</span>
               </div>
               <button
                 type="button"
