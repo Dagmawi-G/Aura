@@ -4,6 +4,7 @@ const orderSchema = new mongoose.Schema({
   orderNumber: { type: String, required: true, unique: true },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
+  secondaryPhone: { type: String, default: "" }, // Alternative phone number (optional)
   customerEmail: { type: String, default: "" },
   deliveryType: { type: String, enum: ["Delivery", "Pickup"], default: "Delivery" },
   deliveryAddress: { type: String, default: "" },

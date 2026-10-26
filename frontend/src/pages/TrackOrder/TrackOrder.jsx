@@ -161,8 +161,11 @@ const TrackOrder = () => {
                 <div className="tracked-details-grid">
                   <div className="details-col">
                     <h4 className="details-col-title">👤 Customer & Fulfillment</h4>
-                    <p><strong>Name:</strong> {order.customerName}</p>
-                    <p><strong>Phone:</strong> {order.customerPhone}</p>
+                    <p><strong>Buyer's Name:</strong> {order.customerName}</p>
+                    <p><strong>Primary Phone:</strong> {order.customerPhone}</p>
+                    {order.secondaryPhone && (
+                      <p><strong>Additional Phone:</strong> {order.secondaryPhone}</p>
+                    )}
                     <p><strong>Fulfillment:</strong> {order.deliveryType}</p>
                     {order.deliveryDate && (
                       <p><strong>Target Date:</strong> 📅 {order.deliveryDate}</p>
@@ -186,7 +189,7 @@ const TrackOrder = () => {
                           </div>
                           {item.customText && (
                             <p className="custom-print-text">
-                              🔤 Print: <strong>"{item.customText}"</strong>
+                              ✍️ Written Name: <strong>"{item.customText}"</strong>
                             </p>
                           )}
                           {item.selectedStickers && item.selectedStickers.length > 0 && (

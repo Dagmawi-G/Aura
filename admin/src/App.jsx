@@ -8,6 +8,7 @@ import Stickers from "./pages/Stickers/Stickers";
 import Settings from "./pages/Settings/Settings";
 import Admins from "./pages/Admins/Admins";
 import Login from "./pages/Login/Login";
+import NotificationModal from "./components/NotificationModal/NotificationModal";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { StoreContext } from "./context/StoreContext";
@@ -51,6 +52,7 @@ const App = () => {
         theme="light"
       />
       <Navbar url={url} />
+      <NotificationModal url={url} />
       <main className="admin-main-content">
         <Routes>
           <Route path="/" element={<List url={url} />} />

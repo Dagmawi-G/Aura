@@ -4,6 +4,7 @@ const stickerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   image: { type: String, required: true },
   category: { type: String, default: "General" },
+  stickerType: { type: String, enum: ["Mix", "Fixed"], default: "Mix" },
   createdAt: { type: Date, default: Date.now }
 });
 

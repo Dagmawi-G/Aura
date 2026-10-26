@@ -1,4 +1,9 @@
+import mongoose from "mongoose";
 import orderModel from "../models/orderModel.js";
+import { notifyAdminsOfOrder, getVapidPublicKey, savePushSubscription } from "../services/pushService.js";
+
+// In-memory orders store fallback if MongoDB is offline
+const inMemoryOrders = new Map();
 
 // Guest Order Submission with Payment Proof
 const submitGuestOrder = async (req, res) => {
@@ -31,6 +36,7 @@ const submitGuestOrder = async (req, res) => {
       orderNumber: orderNumber,
       customerName: req.body.customerName || "Guest Customer",
       customerPhone: req.body.customerPhone || "",
+      secondaryPhone: req.body.secondaryPhone || "",
       customerEmail: req.body.customerEmail || "",
       deliveryType: req.body.deliveryType || "Delivery",
       deliveryAddress: req.body.deliveryAddress || "",
@@ -51,8 +57,23 @@ const submitGuestOrder = async (req, res) => {
       status: "Pending Verification"
     });
 
+    if (mongoose.connection.readyState === 1) {
+      await newOrder.save();
+    } else {
+      const orderData = newOrder.toObject ? newOrder.toObject() : { ...newOrder };
+      orderData._id = `mem-${Date.now()}`;
+      orderData.createdAt = new Date();
+      orderData.updatedAt = new Date();
+      inMemoryOrders.set(orderNumber, orderData);
+    }
 
-    await newOrder.save();
+    // Trigger website push notification to admin phone & devices
+    try {
+      notifyAdminsOfOrder(newOrder);
+    } catch (pushErr) {
+      console.warn("Could not dispatch push notification:", pushErr.message);
+    }
+
     res.json({
       success: true,
       message: "Order submitted successfully! Proof received.",
@@ -68,7 +89,12 @@ const submitGuestOrder = async (req, res) => {
 // Listing orders for admin panel
 const listOrders = async (req, res) => {
   try {
-    const orders = await orderModel.find({}).sort({ createdAt: -1 });
+    let orders = [];
+    if (mongoose.connection.readyState === 1) {
+      orders = await orderModel.find({}).sort({ createdAt: -1 });
+    } else {
+      orders = Array.from(inMemoryOrders.values()).reverse();
+    }
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("Error listing orders:", error);
@@ -80,15 +106,27 @@ const listOrders = async (req, res) => {
 const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
-    const updatedOrder = await orderModel.findByIdAndUpdate(
-      orderId,
-      { status: status },
-      { new: true }
-    );
-    if (!updatedOrder) {
+    if (mongoose.connection.readyState === 1) {
+      const updatedOrder = await orderModel.findByIdAndUpdate(
+        orderId,
+        { status: status },
+        { new: true }
+      );
+      if (!updatedOrder) {
+        return res.status(404).json({ success: false, message: "Order not found" });
+      }
+      return res.json({ success: true, message: "Order status updated", data: updatedOrder });
+    } else {
+      for (const [key, val] of inMemoryOrders.entries()) {
+        if (val._id === orderId || val.orderNumber === orderId) {
+          val.status = status;
+          val.updatedAt = new Date();
+          inMemoryOrders.set(key, val);
+          return res.json({ success: true, message: "Order status updated", data: val });
+        }
+      }
       return res.status(404).json({ success: false, message: "Order not found" });
     }
-    res.json({ success: true, message: "Order status updated", data: updatedOrder });
   } catch (error) {
     console.error("Error updating status:", error);
     res.status(500).json({ success: false, message: "Error updating status" });
@@ -104,13 +142,22 @@ const trackOrder = async (req, res) => {
     }
 
     const trimmedQuery = query.trim();
-    // Search by orderNumber or phone
-    const orders = await orderModel.find({
-      $or: [
-        { orderNumber: { $regex: new RegExp(`^${trimmedQuery}$`, "i") } },
-        { customerPhone: trimmedQuery }
-      ]
-    }).sort({ createdAt: -1 });
+    let orders = [];
+
+    if (mongoose.connection.readyState === 1) {
+      // Search by orderNumber or phone
+      orders = await orderModel.find({
+        $or: [
+          { orderNumber: { $regex: new RegExp(`^${trimmedQuery}$`, "i") } },
+          { customerPhone: trimmedQuery }
+        ]
+      }).sort({ createdAt: -1 });
+    } else {
+      const qLower = trimmedQuery.toLowerCase();
+      orders = Array.from(inMemoryOrders.values()).filter(
+        (o) => (o.orderNumber && o.orderNumber.toLowerCase() === qLower) || o.customerPhone === trimmedQuery
+      );
+    }
 
     if (!orders || orders.length === 0) {
       return res.status(404).json({ success: false, message: "No orders found matching your search" });
@@ -123,4 +170,55 @@ const trackOrder = async (req, res) => {
   }
 };
 
-export { submitGuestOrder, listOrders, updateStatus, trackOrder };
+// Get VAPID Public Key for client subscription
+const getVapidPublicKeyHandler = async (req, res) => {
+  try {
+    const key = getVapidPublicKey();
+    res.json({ success: true, publicKey: key });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error retrieving VAPID key" });
+  }
+};
+
+// Subscribe admin browser to push notifications
+const subscribePushHandler = async (req, res) => {
+  try {
+    const { subscription, adminName } = req.body;
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ success: false, message: "Subscription endpoint is required" });
+    }
+    await savePushSubscription(subscription, adminName || "Admin");
+    res.json({ success: true, message: "Push notifications successfully enabled on this device" });
+  } catch (error) {
+    console.error("Error subscribing to push:", error);
+    res.status(500).json({ success: false, message: "Failed to save push subscription: " + error.message });
+  }
+};
+
+// Test push notification dispatch (for admin verification)
+const testPushHandler = async (req, res) => {
+  try {
+    const isUrgent = req.body.isUrgent === true || req.body.isUrgent === "true";
+    await notifyAdminsOfOrder({
+      _id: "test-id",
+      orderNumber: "AUR-TEST" + Math.floor(100 + Math.random() * 900),
+      customerName: "Test Order Customer",
+      totalAmount: 1250,
+      isUrgent: isUrgent
+    });
+    res.json({ success: true, message: `Test push sent! (${isUrgent ? "Urgent" : "Standard"})` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Test push failed: " + error.message });
+  }
+};
+
+export { 
+  submitGuestOrder, 
+  listOrders, 
+  updateStatus, 
+  trackOrder,
+  getVapidPublicKeyHandler,
+  subscribePushHandler,
+  testPushHandler
+};
+

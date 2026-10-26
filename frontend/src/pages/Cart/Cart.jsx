@@ -42,7 +42,7 @@ const Cart = () => {
       <div className="cart-page-header">
         <h1 className="page-heading">Your Custom Order Cart</h1>
         <p className="page-subheading">
-          Review your items, custom printed words, selected stickers, and delivery details
+          Review your items, written name, selected stickers, and delivery details
         </p>
       </div>
 
@@ -89,10 +89,7 @@ const Cart = () => {
 
                 <div className="dest-meta-item">
                   <span className="dest-label">Route Distance:</span>
-                  <strong>
-                    {cartDeliveryInfo.distanceKm} km{" "}
-                    {cartDeliveryInfo.routeDuration ? `(~${cartDeliveryInfo.routeDuration} min drive)` : ""}
-                  </strong>
+                  <strong>{cartDeliveryInfo.distanceKm} km</strong>
                 </div>
 
                 <div className="dest-meta-item">
@@ -107,9 +104,10 @@ const Cart = () => {
 
           <div className="dest-policy-note">
             <span>ℹ️</span>
-            <span>
-              <strong>Individual Delivery Policy:</strong> Each order delivers to one destination. To send items to a different address, please place an individual order.
-            </span>
+            <div>
+              <p><strong>Addis Ababa Delivery Only:</strong> We only provide delivery within Addis Ababa. Delivery outside Addis Ababa is not available.</p>
+              <p style={{ marginTop: "4px" }}><strong>Individual Destination Policy:</strong> Each order delivers to one destination.</p>
+            </div>
           </div>
         </div>
       )}
@@ -140,14 +138,14 @@ const Cart = () => {
                   </button>
                 </div>
 
-                {/* Custom Print Tag */}
+                {/* Written Name Tag */}
                 {item.customText ? (
                   <div className="cart-custom-print">
-                    <span className="print-label">🔤 Print:</span>
+                    <span className="print-label">✍️ Written Name:</span>
                     <span className="print-text">"{item.customText}"</span>
                   </div>
                 ) : (
-                  <span className="print-plain-note">No custom text</span>
+                  <span className="print-plain-note">No written name</span>
                 )}
 
                 {/* Selected Stickers */}

@@ -11,6 +11,7 @@ const addSticker = async (req, res) => {
     const sticker = new stickerModel({
       name: req.body.name || "Custom Sticker",
       category: req.body.category || "General",
+      stickerType: req.body.stickerType === "Fixed" ? "Fixed" : "Mix",
       image: imageFilename
     });
     await sticker.save();

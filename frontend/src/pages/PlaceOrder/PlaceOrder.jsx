@@ -24,6 +24,7 @@ const PlaceOrder = () => {
   // Customer Information
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerSecondaryPhone, setCustomerSecondaryPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -166,6 +167,7 @@ const PlaceOrder = () => {
       const formData = new FormData();
       formData.append("customerName", customerName.trim());
       formData.append("customerPhone", customerPhone.trim());
+      formData.append("secondaryPhone", customerSecondaryPhone.trim());
       formData.append("customerEmail", customerEmail.trim());
       formData.append("deliveryType", deliveryType);
       formData.append("deliveryDate", deliveryDate);
@@ -244,13 +246,19 @@ const PlaceOrder = () => {
 
           <div className="receipt-meta-grid">
             <div className="receipt-meta-item">
-              <span className="meta-label">Customer Name</span>
+              <span className="meta-label">Order Buyer's Name</span>
               <strong className="meta-val">{submittedOrder.customerName}</strong>
             </div>
             <div className="receipt-meta-item">
-              <span className="meta-label">Phone Number</span>
+              <span className="meta-label">Primary Phone</span>
               <strong className="meta-val">{submittedOrder.customerPhone}</strong>
             </div>
+            {submittedOrder.secondaryPhone && (
+              <div className="receipt-meta-item">
+                <span className="meta-label">Additional Phone</span>
+                <strong className="meta-val">{submittedOrder.secondaryPhone}</strong>
+              </div>
+            )}
             <div className="receipt-meta-item">
               <span className="meta-label">Fulfillment</span>
               <strong className="meta-val">{submittedOrder.deliveryType}</strong>
@@ -291,7 +299,7 @@ const PlaceOrder = () => {
                   <span>{item.quantity}x</span>
                   <strong>{item.name}</strong>
                   {item.customText && (
-                    <span className="receipt-print-tag">"{item.customText}"</span>
+                    <span className="receipt-print-tag">✍️ Written Name: "{item.customText}"</span>
                   )}
                 </div>
                 <span>{item.price * item.quantity} {settings.currency}</span>
@@ -356,20 +364,25 @@ const PlaceOrder = () => {
             <h2 className="section-card-title">👤 1. Customer & Delivery Information</h2>
             <div className="form-fields-group">
               <div className="form-group">
-                <label className="form-label">Full Name <span className="label-req">*</span></label>
+                <label className="form-label">
+                  Order Buyer's Name <span className="label-req">*</span>
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Dawit Tadesse"
+                  placeholder="e.g. Dawit Tadesse (Your real name)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   required
                 />
+                <span className="form-field-hint" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
+                  Please enter the buyer's real name for order contact & receipt (not the custom written name printed on the item).
+                </span>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Phone Number <span className="label-req">*</span></label>
+                  <label className="form-label">Primary Phone Number <span className="label-req">*</span></label>
                   <input
                     type="tel"
                     inputMode="tel"
@@ -382,61 +395,48 @@ const PlaceOrder = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Email (Optional)</label>
+                  <label className="form-label">Additional Phone Number (Optional)</label>
                   <input
-                    type="email"
-                    inputMode="email"
+                    type="tel"
+                    inputMode="tel"
                     className="form-input"
-                    placeholder="e.g. user@gmail.com"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="e.g. 0922334455 (Backup contact)"
+                    value={customerSecondaryPhone}
+                    onChange={(e) => setCustomerSecondaryPhone(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* ⚡ Urgent Same-Day Order Toggle Card */}
-              <div className={`urgent-order-card ${isUrgent ? "active" : ""}`}>
-                <div className="urgent-toggle-top">
-                  <label className="urgent-checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="urgent-checkbox-input"
-                      checked={isUrgent}
-                      onChange={(e) => handleUrgentToggle(e.target.checked)}
-                    />
-                    <div className="urgent-checkbox-custom">
-                      {isUrgent && <span>✓</span>}
-                    </div>
-                    <div className="urgent-label-text">
-                      <div className="urgent-title-row">
-                        <span className="urgent-bolt-icon">⚡</span>
-                        <strong className="urgent-title">Urgent Order (Same-Day Express)</strong>
-                        <span className="urgent-fee-tag">+{configuredUrgentFee} {settings.currency}</span>
-                      </div>
-                      <p className="urgent-subtext">
-                        Need it done and delivered today? Priority queue printing & express same-day dispatch.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Important recommendation to call seller */}
-                {isUrgent && (
-                  <div className="urgent-call-recommendation">
-                    <div className="rec-header">
-                      <span className="rec-icon">📞</span>
-                      <strong className="rec-title">Please Call to Notify the Seller:</strong>
-                    </div>
-                    <p className="rec-body">
-                      For guaranteed same-day delivery, please call or WhatsApp the seller directly at{" "}
-                      <a href={`tel:${storePhoneDisplay.replace(/\s+/g, '')}`} className="rec-phone-link">
-                        <strong>{storePhoneDisplay}</strong>
-                      </a>{" "}
-                      after submitting this order to fast-track your priority preparation!
-                    </p>
-                  </div>
-                )}
+              <div className="form-group">
+                <label className="form-label">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  inputMode="email"
+                  className="form-input"
+                  placeholder="e.g. user@gmail.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                />
               </div>
+
+              {deliveryType === "Delivery" && (
+                <div className="addis-delivery-notice" style={{
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "10px",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  fontSize: "13px",
+                  color: "#ef4444"
+                }}>
+                  <span style={{ fontSize: "18px" }}>📍</span>
+                  <div>
+                    <strong>Addis Ababa Delivery Only:</strong> We do not offer delivery outside Addis Ababa. If you are located outside Addis Ababa, please choose <strong>Store Pickup</strong>.
+                  </div>
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="form-group">
@@ -479,6 +479,50 @@ const PlaceOrder = () => {
                       readOnly
                       disabled
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* ⚡ Urgent Same-Day Order Toggle Card - positioned directly under the pickup/delivery date */}
+              <div className={`urgent-order-card ${isUrgent ? "active" : ""}`}>
+                <div className="urgent-toggle-top">
+                  <label className="urgent-checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="urgent-checkbox-input"
+                      checked={isUrgent}
+                      onChange={(e) => handleUrgentToggle(e.target.checked)}
+                    />
+                    <div className="urgent-checkbox-custom">
+                      {isUrgent && <span>✓</span>}
+                    </div>
+                    <div className="urgent-label-text">
+                      <div className="urgent-title-row">
+                        <span className="urgent-bolt-icon">⚡</span>
+                        <strong className="urgent-title">Urgent Order (Same-Day Express)</strong>
+                        <span className="urgent-fee-tag">+{configuredUrgentFee} {settings.currency}</span>
+                      </div>
+                      <p className="urgent-subtext">
+                        Need it done and delivered today? Priority queue printing & express same-day dispatch.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Important recommendation to call seller */}
+                {isUrgent && (
+                  <div className="urgent-call-recommendation">
+                    <div className="rec-header">
+                      <span className="rec-icon">📞</span>
+                      <strong className="rec-title">Please Call to Notify the Seller:</strong>
+                    </div>
+                    <p className="rec-body">
+                      For guaranteed same-day delivery, please call or WhatsApp the seller directly at{" "}
+                      <a href={`tel:${storePhoneDisplay.replace(/\s+/g, '')}`} className="rec-phone-link">
+                        <strong>{storePhoneDisplay}</strong>
+                      </a>{" "}
+                      after submitting this order to fast-track your priority preparation!
+                    </p>
                   </div>
                 )}
               </div>
@@ -639,7 +683,7 @@ const PlaceOrder = () => {
                   <div className="item-text-info">
                     <strong>{item.quantity}x {item.name}</strong>
                     {item.customText && (
-                      <span className="summary-custom-text">Print: "{item.customText}"</span>
+                      <span className="summary-custom-text">Written Name: "{item.customText}"</span>
                     )}
                     {item.selectedStickers && item.selectedStickers.length > 0 && (
                       <span className="summary-stickers-text">

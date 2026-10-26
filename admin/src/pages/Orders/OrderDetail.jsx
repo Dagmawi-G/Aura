@@ -171,10 +171,18 @@ const OrderDetail = ({ url }) => {
             </div>
 
             <div className="customer-info-block">
-              <p className="cust-name">{order.customerName}</p>
+              <div style={{ marginBottom: "6px" }}>
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: "600", display: "block" }}>Order Buyer's Name</span>
+                <p className="cust-name" style={{ margin: 0 }}>{order.customerName}</p>
+              </div>
               <p className="cust-phone">
-                <a href={`tel:${order.customerPhone}`}>📞 {order.customerPhone}</a>
+                <a href={`tel:${order.customerPhone}`}>📞 Primary: {order.customerPhone}</a>
               </p>
+              {order.secondaryPhone && (
+                <p className="cust-phone" style={{ marginTop: "4px" }}>
+                  <a href={`tel:${order.secondaryPhone}`}>📞 Alt / Backup: {order.secondaryPhone}</a>
+                </p>
+              )}
               {order.customerEmail && (
                 <p className="cust-email">✉️ {order.customerEmail}</p>
               )}
@@ -370,12 +378,12 @@ const OrderDetail = ({ url }) => {
 
                   {item.customText ? (
                     <div className="custom-print-box">
-                      <span className="custom-print-label">🔤 Custom Text:</span>
+                      <span className="custom-print-label">✍️ Written Name:</span>
                       <span className="custom-print-val">"{item.customText}"</span>
                     </div>
                   ) : (
                     <div className="custom-print-box plain">
-                      <span className="custom-print-label">No custom text</span>
+                      <span className="custom-print-label">No written name</span>
                     </div>
                   )}
 

@@ -44,7 +44,26 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   const [customText, setCustomText] = useState("");
   const [fontStyle, setFontStyle] = useState("Serif");
   const [selectedStickers, setSelectedStickers] = useState([]);
+  const [stickerTab, setStickerTab] = useState("Mix"); // 'Mix' or 'Fixed'
+  const [isOutsideAddis, setIsOutsideAddis] = useState(false);
   // Quantity is always 1 per cart item — add another item to the cart for more
+
+  // Check if coordinates fall outside the greater Addis Ababa metropolitan area
+  const isLocationOutsideAddis = (lat, lng) => {
+    if (!lat || !lng) return false;
+    // Addis Ababa metropolitan area coordinates range
+    if (lat < 8.80 || lat > 9.15 || lng < 38.62 || lng > 38.95) {
+      return true;
+    }
+    return false;
+  };
+
+  // Written name change handler: max 7 chars, only English letters, numbers, spaces
+  const handleWrittenNameChange = (e) => {
+    const raw = e.target.value;
+    const filtered = raw.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 7);
+    setCustomText(filtered);
+  };
 
   // Delivery vs Pickup
   const [deliveryType, setDeliveryType] = useState("Delivery");
@@ -67,11 +86,16 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
   const storeCoords = settings.storeCoordinates || { lat: 8.9956, lng: 38.7891 };
 
-  // Filter stickers
+  // Filter available stickers for this product
   const availableStickers = stickers_list.filter((sticker) => {
     if (!product?.stickers || product.stickers.length === 0) return true;
     return product.stickers.includes(sticker.name) || product.stickers.includes(sticker._id);
   });
+
+  // Classify stickers into Mix (A) and Fixed (B)
+  const mixStickers = availableStickers.filter((s) => (s.stickerType || "Mix") === "Mix");
+  const fixedStickers = availableStickers.filter((s) => (s.stickerType || "Mix") === "Fixed");
+
 
   // ── LOCK BODY SCROLL & ESC KEY LISTENER ─────────────────────────────
   useEffect(() => {
@@ -186,6 +210,12 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
     const coords = { lat: Number(lat.toFixed(5)), lng: Number(lng.toFixed(5)) };
     setCustomerCoordinates(coords);
+
+    const outside = isLocationOutsideAddis(lat, lng);
+    setIsOutsideAddis(outside);
+    if (outside && !isLocked) {
+      toast.warn("⚠️ Note: We do not deliver outside Addis Ababa. Please choose Store Pickup or mark a location within Addis Ababa.");
+    }
 
     // Remove existing customer marker & line
     if (customerMarkerRef.current) {
@@ -344,6 +374,11 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
       return;
     }
 
+    if (deliveryType === "Delivery" && isOutsideAddis) {
+      toast.error("⚠️ We do not have delivery outside Addis Ababa. Please choose Store Pickup or mark an address within Addis Ababa.");
+      return;
+    }
+
     const payload = {
       foodId: product._id,
       name: product.name,
@@ -429,50 +464,53 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
           {/* Form Sections */}
           <div className="cust-form-sections">
-            {/* 1. Custom Text */}
-            <div className="cust-section-box">
-              <label className="cust-section-title">
-                🔤 1. Custom Words to Print on Item
-              </label>
-              <div className="custom-text-input-wrap">
-                <input
-                  type="text"
-                  maxLength={30}
-                  className="form-input custom-print-input"
-                  placeholder="e.g. AURA 2026 / YOUR NAME / EST. 94"
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                />
-                <div className="font-options">
-                  {["Serif", "Modern", "Street", "Script"].map((font) => (
-                    <button
-                      key={font}
-                      type="button"
-                      className={`font-pill ${fontStyle === font ? "active" : ""}`}
-                      onClick={() => setFontStyle(font)}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Sticker Attachments */}
+            {/* 1. Sticker Selection (Classified into Mix and Fixed) */}
             <div className="cust-section-box">
               <div className="section-title-row">
                 <label className="cust-section-title">
-                  ✨ 2. Select Stickers to Apply
+                  ✨ 1. Select Stickers
                 </label>
                 <span className="selection-count-badge">
                   {selectedStickers.length} Selected
                 </span>
               </div>
+
+              {/* Classification Tabs: Mix vs Fixed */}
+              <div className="sticker-class-tabs">
+                <button
+                  type="button"
+                  className={`sticker-tab-btn ${stickerTab === "Mix" ? "active" : ""}`}
+                  onClick={() => setStickerTab("Mix")}
+                >
+                  🎨 A. Mix ({mixStickers.length})
+                </button>
+                <button
+                  type="button"
+                  className={`sticker-tab-btn ${stickerTab === "Fixed" ? "active" : ""}`}
+                  onClick={() => setStickerTab("Fixed")}
+                >
+                  📌 B. Fixed ({fixedStickers.length})
+                </button>
+              </div>
+
+              {/* Mix Theme Guidance Note */}
+              {stickerTab === "Mix" && (
+                <div className="mix-theme-note-card">
+                  <span className="mix-note-icon">💡</span>
+                  <div className="mix-note-text">
+                    <strong>Note:</strong> Consider the theme when choosing your stickers.
+                  </div>
+                </div>
+              )}
+
+              {/* Sticker Grid */}
               <div className="cust-stickers-grid">
-                {availableStickers.length === 0 ? (
-                  <p className="no-stickers-note">No stickers available for this item.</p>
+                {(stickerTab === "Mix" ? mixStickers : fixedStickers).length === 0 ? (
+                  <p className="no-stickers-note">
+                    No {stickerTab.toLowerCase()} stickers available for this item.
+                  </p>
                 ) : (
-                  availableStickers.map((st) => {
+                  (stickerTab === "Mix" ? mixStickers : fixedStickers).map((st) => {
                     const isSelected = selectedStickers.some((s) => s.name === st.name);
                     return (
                       <div
@@ -494,11 +532,68 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* 3. Delivery vs Pickup — Map Picker */}
+            {/* 2. Written Name (Max 7 characters, English words & numbers only) */}
+            <div className="cust-section-box">
+              <div className="section-title-row">
+                <label className="cust-section-title">
+                  ✍️ 2. Written Name to Print on Item
+                </label>
+                <span 
+                  className="char-count-badge" 
+                  style={{
+                    fontSize: "0.82rem",
+                    fontWeight: "600",
+                    color: customText.length >= 7 ? "#dc2626" : "#64748b"
+                  }}
+                >
+                  {customText.length}/7 characters
+                </span>
+              </div>
+
+              <div className="custom-text-input-wrap">
+                <input
+                  type="text"
+                  maxLength={7}
+                  className="form-input custom-print-input"
+                  placeholder="e.g. AURA / NO. 7"
+                  value={customText}
+                  onChange={handleWrittenNameChange}
+                />
+
+                {/* English words and numbers note */}
+                <div className="written-name-note-box">
+                  <span className="note-icon">ℹ️</span>
+                  <span><strong>Note:</strong> Use only English words and numbers (Max 7 characters).</span>
+                </div>
+
+                <div className="font-options">
+                  {["Serif", "Modern", "Street", "Script"].map((font) => (
+                    <button
+                      key={font}
+                      type="button"
+                      className={`font-pill ${fontStyle === font ? "active" : ""}`}
+                      onClick={() => setFontStyle(font)}
+                    >
+                      {font}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Fulfillment & Delivery Location */}
             <div className="cust-section-box">
               <label className="cust-section-title">
                 📍 3. Fulfillment & Delivery Location
               </label>
+
+              {/* Outside Addis Ababa Notice */}
+              <div className="addis-delivery-notice-banner">
+                <span className="addis-notice-icon">⚠️</span>
+                <div className="addis-notice-text">
+                  <strong>Outside Addis Ababa:</strong> We do NOT have delivery outside Addis Ababa. Delivery is available strictly within Addis Ababa. For locations outside Addis Ababa, please select <strong>🏬 Store Pickup</strong>.
+                </div>
+              </div>
 
               {hasCartDelivery && (
                 <div className="cart-locked-delivery-banner">
@@ -525,7 +620,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                         </div>
                         <div className="locked-detail-pill">
                           <span className="pill-lbl">Route Distance:</span>
-                          <strong>{cartDeliveryInfo.distanceKm} km {cartDeliveryInfo.routeDuration ? `(~${cartDeliveryInfo.routeDuration} min drive)` : ""}</strong>
+                          <strong>{cartDeliveryInfo.distanceKm} km</strong>
                         </div>
                         <div className="locked-detail-pill highlight">
                           <span className="pill-lbl">Order Delivery Fee:</span>
@@ -574,7 +669,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       {hasCartDelivery ? (
                         <span><strong>Shared Cart Location:</strong> Pin is locked to your current cart. To change address, order individually below.</span>
                       ) : (
-                        <span><strong>Tap anywhere on the map</strong> to pin your delivery location. Drag the blue pin to fine-tune.</span>
+                        <span><strong>Tap anywhere on the map (Addis Ababa only)</strong> to pin your delivery location. Drag the blue pin to fine-tune.</span>
                       )}
                     </p>
                     {!hasCartDelivery && (
@@ -607,6 +702,17 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                     )}
                   </div>
 
+                  {/* Outside Addis Alert under map if user pins outside */}
+                  {isOutsideAddis && (
+                    <div className="outside-addis-warning-box">
+                      <span>⚠️</span>
+                      <div>
+                        <strong>Location outside Addis Ababa detected!</strong>
+                        <p>We do not have delivery outside Addis Ababa. Please select <strong>Store Pickup</strong> or drag your pin within Addis Ababa.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Optional address note */}
                   {!hasCartDelivery && (
                     <input
@@ -635,11 +741,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                           <div className="route-metric-wrap">
                             <span>{calculatedDistance} km</span>
                             <span className="route-badge">
-                              {isRoadRoute
-                                ? routeDuration
-                                  ? `🚗 ~${routeDuration} min drive`
-                                  : "🚗 Road route"
-                                : "📏 Straight-line"}
+                              {isRoadRoute ? "🚗 Road route" : "📏 Straight-line"}
                             </span>
                           </div>
                         ) : (
@@ -658,7 +760,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
               ) : (
                 <div className="pickup-info-box">
                   <p>📍 <strong>Store Address:</strong> {settings.storeAddress}</p>
-                  <p className="pickup-note">No delivery charge. Pick up your custom printed order directly from our store.</p>
+                  <p className="pickup-note">No delivery charge. Pick up your custom printed order directly from our store in Addis Ababa.</p>
                 </div>
               )}
             </div>
