@@ -40,6 +40,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
   const hasCartDelivery = cartItems.length > 0 && !!cartDeliveryInfo;
   const [showLocationConflictModal, setShowLocationConflictModal] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
   const [customText, setCustomText] = useState("");
   const [fontStyle, setFontStyle] = useState("Serif");
@@ -208,6 +209,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
     const m = map || mapRef.current;
     if (!m) return;
 
+    setValidationError("");
     const coords = { lat: Number(lat.toFixed(5)), lng: Number(lng.toFixed(5)) };
     setCustomerCoordinates(coords);
 
@@ -329,6 +331,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
       return;
     }
     setDeliveryType(type);
+    setValidationError("");
   };
 
   const toggleSticker = (sticker) => {
@@ -370,7 +373,12 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
   const handleAddToCart = (directCheckout = false) => {
     if (deliveryType === "Delivery" && !customerCoordinates) {
-      toast.error("Please tap on the map to mark your delivery location, or use GPS 📍");
+      const msg = "Please choose your delivery location on the map (or select Store Pickup) to proceed 📍";
+      setValidationError(msg);
+      toast.error(msg);
+      if (mapContainerRef.current) {
+        mapContainerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       return;
     }
 
@@ -378,6 +386,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
       toast.error("⚠️ We do not have delivery outside Addis Ababa. Please choose Store Pickup or mark an address within Addis Ababa.");
       return;
     }
+    setValidationError("");
 
     const payload = {
       foodId: product._id,
@@ -687,7 +696,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   {/* Leaflet Map Container */}
                   <div
                     ref={mapContainerRef}
-                    className={`delivery-map-container ${hasCartDelivery ? "locked-map" : ""}`}
+                    className={`delivery-map-container ${hasCartDelivery ? "locked-map" : ""} ${validationError && !customerCoordinates ? "delivery-needs-attention" : ""}`}
                     id="delivery-map"
                   />
 
@@ -789,6 +798,13 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
               <span className="prepay-settle-hint">💳 Prepayment (ቀብድ) settled at checkout</span>
             )}
           </div>
+
+          {validationError && (
+            <div className="cust-validation-alert" role="alert">
+              <span className="alert-icon">⚠️</span>
+              <span className="alert-msg">{validationError}</span>
+            </div>
+          )}
 
           <div className="footer-action-buttons">
             <button

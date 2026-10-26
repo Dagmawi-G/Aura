@@ -7,6 +7,7 @@ import settingRouter from "./routes/settingRoute.js";
 import stickerRouter from "./routes/stickerRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import { ensureDefaultAdmin } from "./controllers/userController.js";
+import { startKeepAlive } from "./utils/keepAlive.js";
 import "dotenv/config";
 
 // App config
@@ -23,6 +24,20 @@ connectDB().then(() => {
   ensureDefaultAdmin();
 });
 
+// Health check / Keep-Alive ping endpoints (to prevent Render from sleeping)
+const handlePing = (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Aura Backend is awake & operational",
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+};
+
+app.get("/api/ping", handlePing);
+app.get("/ping", handlePing);
+app.get("/health", handlePing);
+
 // API endpoints
 app.use("/api/food", foodRouter);
 app.use("/images", express.static("uploads"));
@@ -37,4 +52,7 @@ app.get("/", (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server Started on port: ${port}`);
+  // Start Render keep-alive self-ping background worker
+  startKeepAlive(port);
 });
+

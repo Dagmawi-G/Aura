@@ -102,14 +102,26 @@ const AddItemModal = ({ isOpen, onClose, url, onItemAdded, editItem = null }) =>
       return;
     }
 
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!validTypes.includes(file.type.toLowerCase())) {
+    const isImage = (file.type && file.type.startsWith("image/")) ||
+      /\.(jpe?g|png|webp|gif|svg|bmp|jfif)$/i.test(file.name);
+    if (!isImage) {
       toast.error("Invalid format. Please upload photo formats only (JPG, PNG, WEBP, SVG, GIF).");
       return;
     }
 
     setImage(file);
-    setImagePreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      setImagePreview(loadEvent.target.result);
+    };
+    reader.onerror = () => {
+      try {
+        setImagePreview(URL.createObjectURL(file));
+      } catch (err) {
+        console.error("Preview creation error:", err);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleSticker = (stickerName) => {

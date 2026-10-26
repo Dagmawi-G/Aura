@@ -13,6 +13,8 @@ const List = ({ url }) => {
   const [currency, setCurrency] = useState("ETB");
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
+  const [savingOrder, setSavingOrder] = useState(false);
+
   const fetchList = async () => {
     try {
       setLoading(true);
@@ -31,6 +33,54 @@ const List = ({ url }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReorder = async (newList) => {
+    setList(newList);
+    try {
+      setSavingOrder(true);
+      const payload = newList.map((item, index) => ({
+        id: item._id,
+        order: index
+      }));
+      const res = await axios.post(`${url}/api/food/reorder`, { items: payload });
+      if (!res.data.success) {
+        toast.error("Failed to save new item order");
+      }
+    } catch (e) {
+      toast.error("Error saving item order");
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const handleMoveUp = (index) => {
+    if (index === 0) return;
+    const newList = [...list];
+    const temp = newList[index];
+    newList[index] = newList[index - 1];
+    newList[index - 1] = temp;
+    handleReorder(newList);
+    toast.success(`Moved "${temp.name}" up`);
+  };
+
+  const handleMoveDown = (index) => {
+    if (index === list.length - 1) return;
+    const newList = [...list];
+    const temp = newList[index];
+    newList[index] = newList[index + 1];
+    newList[index + 1] = temp;
+    handleReorder(newList);
+    toast.success(`Moved "${temp.name}" down`);
+  };
+
+  const handleMakeTop = (index) => {
+    if (index === 0) return;
+    const newList = [...list];
+    const [item] = newList.splice(index, 1);
+    newList.unshift(item);
+    handleReorder(newList);
+    toast.success(`"${item.name}" is now #1 / Trending first!`);
   };
 
   const removeFood = async (foodId) => {
@@ -116,6 +166,10 @@ const List = ({ url }) => {
             <button className="clear-btn" onClick={() => setSearchQuery("")}>✕</button>
           )}
         </div>
+        <div className="reorder-info-hint">
+          <span>💡 <strong>Tip:</strong> Reorder items to change display order on the customer website</span>
+          {savingOrder && <span className="syncing-order-tag">Syncing order...</span>}
+        </div>
       </div>
 
       {/* Items Grid */}
@@ -135,94 +189,138 @@ const List = ({ url }) => {
         </div>
       ) : (
         <div className="catalog-grid">
-          {filteredItems.map((item) => (
-            <div key={item._id} className="product-card aura-card">
-              <div className="product-card-media">
-                <img
-                  src={`${url}/images/${item.image}`}
-                  alt={item.name}
-                  className="product-img"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60";
-                  }}
-                />
-              </div>
+          {filteredItems.map((item) => {
+            const actualIndex = list.findIndex((x) => x._id === item._id);
+            const isFirst = actualIndex === 0;
+            const isLast = actualIndex === list.length - 1;
 
-              <div className="product-card-body">
-                <div className="product-card-top">
-                  <h3 className="product-name">{item.name}</h3>
-                  <span className="product-price">
-                    {item.price} <span className="currency-unit">{currency}</span>
+            return (
+              <div key={item._id} className="product-card aura-card">
+                <div className="product-card-media">
+                  <span className="product-rank-badge" title={`Catalog Position #${actualIndex + 1}`}>
+                    #{actualIndex + 1} {isFirst ? "🔥 Trending #1" : ""}
                   </span>
+                  <img
+                    src={`${url}/images/${item.image}`}
+                    alt={item.name}
+                    className="product-img"
+                    onError={(e) => {
+                      e.target.src = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60";
+                    }}
+                  />
                 </div>
 
-                {item.description ? (
-                  <p className="product-desc">{item.description}</p>
-                ) : (
-                  <p className="product-desc muted">No description provided</p>
-                )}
+                <div className="product-card-body">
+                  <div className="product-card-top">
+                    <h3 className="product-name">{item.name}</h3>
+                    <span className="product-price">
+                      {item.price} <span className="currency-unit">{currency}</span>
+                    </span>
+                  </div>
 
-                {item.stickers && item.stickers.length > 0 && (
-                  <div className="product-stickers-wrap">
-                    <span className="stickers-label">Stickers:</span>
-                    <div className="sticker-tags">
-                      {item.stickers.map((s, idx) => (
-                        <span key={idx} className="sticker-tag-badge">
-                          ✨ {s}
-                        </span>
-                      ))}
+                  {item.description ? (
+                    <p className="product-desc">{item.description}</p>
+                  ) : (
+                    <p className="product-desc muted">No description provided</p>
+                  )}
+
+                  {item.stickers && item.stickers.length > 0 && (
+                    <div className="product-stickers-wrap">
+                      <span className="stickers-label">Stickers:</span>
+                      <div className="sticker-tags">
+                        {item.stickers.map((s, idx) => (
+                          <span key={idx} className="sticker-tag-badge">
+                            ✨ {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Position / Reorder Bar */}
+                  <div className="product-reorder-bar">
+                    <span className="reorder-bar-label">Position:</span>
+                    <div className="reorder-btn-group">
+                      <button
+                        type="button"
+                        className="btn-order-arrow"
+                        disabled={isFirst || searchQuery !== ""}
+                        onClick={() => handleMoveUp(actualIndex)}
+                        title="Move Up in Catalog"
+                      >
+                        ▲ Up
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-order-arrow"
+                        disabled={isLast || searchQuery !== ""}
+                        onClick={() => handleMoveDown(actualIndex)}
+                        title="Move Down in Catalog"
+                      >
+                        ▼ Down
+                      </button>
+                      {!isFirst && searchQuery === "" && (
+                        <button
+                          type="button"
+                          className="btn-order-top"
+                          onClick={() => handleMakeTop(actualIndex)}
+                          title="Move to #1 Trending Spot"
+                        >
+                          ⭐ Make #1
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
 
-                <div className="product-card-actions">
-                  {/* Edit button */}
-                  <button
-                    className="btn-edit-item"
-                    onClick={() => handleOpenEdit(item)}
-                    title="Edit Item"
-                  >
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <span>Edit</span>
-                  </button>
-
-                  {/* Delete button — inline 2-step confirm */}
-                  {pendingDeleteId === item._id ? (
-                    <div className="delete-confirm-row">
-                      <span className="delete-confirm-label">Delete?</span>
-                      <button
-                        className="btn-confirm-yes"
-                        onClick={() => removeFood(item._id)}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        className="btn-confirm-no"
-                        onClick={() => setPendingDeleteId(null)}
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
+                  <div className="product-card-actions">
+                    {/* Edit button */}
                     <button
-                      className="btn-delete-item"
-                      onClick={() => removeFood(item._id)}
-                      title="Remove Item"
+                      className="btn-edit-item"
+                      onClick={() => handleOpenEdit(item)}
+                      title="Edit Item"
                     >
                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
-                      <span>Remove</span>
+                      <span>Edit</span>
                     </button>
-                  )}
+
+                    {/* Delete button — inline 2-step confirm */}
+                    {pendingDeleteId === item._id ? (
+                      <div className="delete-confirm-row">
+                        <span className="delete-confirm-label">Delete?</span>
+                        <button
+                          className="btn-confirm-yes"
+                          onClick={() => removeFood(item._id)}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          className="btn-confirm-no"
+                          onClick={() => setPendingDeleteId(null)}
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn-delete-item"
+                        onClick={() => removeFood(item._id)}
+                        title="Remove Item"
+                      >
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

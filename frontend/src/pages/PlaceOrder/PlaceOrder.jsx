@@ -4,6 +4,7 @@ import { StoreContext } from "../../context/StoreContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
+import BankLogo, { getPaymentProviderInfo } from "../../components/BankLogos/BankLogos";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -50,13 +51,15 @@ const PlaceOrder = () => {
   const total = subtotal + deliveryFee + urgentFee;
   const totalItemCount = getTotalItemCount ? getTotalItemCount() : cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  // When toggling urgent order, auto-set date to today
+  // When toggling urgent order, auto-set date to today, or empty on uncheck
   const handleUrgentToggle = (checked) => {
     setIsUrgent(checked);
     if (checked) {
       const todayStr = new Date().toISOString().split("T")[0];
       setDeliveryDate(todayStr);
       toast.info(`⚡ Urgent Same-Day Order enabled (+${configuredUrgentFee} ${settings.currency})`);
+    } else {
+      setDeliveryDate("");
     }
   };
 
@@ -76,7 +79,6 @@ const PlaceOrder = () => {
     : minDeposit;
 
   const remainingBalance = Math.max(0, total - effectivePrepayment);
-
 
   // Determine delivery type from cart
   const deliveryType = cartDeliveryInfo?.deliveryType || (cartItems.some((i) => i.deliveryType === "Delivery") ? "Delivery" : "Pickup");
@@ -102,11 +104,11 @@ const PlaceOrder = () => {
     }
   }, [settings]);
 
-  // 1-Click Copy Handler
+  // 1-Click Copy Handlers
   const handleCopyAccount = (accountNumber, id) => {
     navigator.clipboard.writeText(accountNumber);
     setCopiedId(id);
-    toast.success(`Copied "${accountNumber}" to clipboard!`);
+    toast.success(`Copied Account Number "${accountNumber}" to clipboard!`);
     setTimeout(() => {
       setCopiedId(null);
     }, 2500);
@@ -119,9 +121,9 @@ const PlaceOrder = () => {
     setTimeout(() => setCopiedRef(false), 2500);
   };
 
-  // Payment Screenshot Upload Handler
+  // Payment Screenshot Upload Handler (uses FileReader base64 for 100% reliable previews)
   const handleProofChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
@@ -129,14 +131,28 @@ const PlaceOrder = () => {
       return;
     }
 
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif", "image/svg+xml"];
-    if (!validTypes.includes(file.type.toLowerCase())) {
+    const isImage = (file.type && file.type.startsWith("image/")) ||
+      /\.(jpe?g|png|webp|gif|svg|bmp|jfif|heic)$/i.test(file.name);
+    if (!isImage) {
       toast.error("Please upload an image screenshot (JPEG, PNG, WEBP).");
       return;
     }
 
     setPaymentProofFile(file);
-    setPaymentProofPreview(URL.createObjectURL(file));
+
+    // Read as Base64 Data URL so the image loads reliably in all browsers
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      setPaymentProofPreview(uploadEvent.target.result);
+    };
+    reader.onerror = () => {
+      try {
+        setPaymentProofPreview(URL.createObjectURL(file));
+      } catch (err) {
+        console.error("Preview creation error:", err);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmitOrder = async (e) => {
@@ -148,7 +164,7 @@ const PlaceOrder = () => {
     }
 
     if (!deliveryDate) {
-      toast.error(`Please select your preferred ${deliveryType === "Pickup" ? "pickup" : "delivery"} date`);
+      toast.error("Please select your delivery/pickup date");
       return;
     }
 
@@ -346,6 +362,7 @@ const PlaceOrder = () => {
   }
 
   const activePaymentMethods = (settings.paymentMethods || []).filter((pm) => pm.active);
+  const selectedActiveMethod = activePaymentMethods.find((pm) => pm.provider === selectedPaymentMethod) || activePaymentMethods[0];
   const storePhoneDisplay = settings.storePhone || "+251 911 223 344";
 
   return (
@@ -441,7 +458,7 @@ const PlaceOrder = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">
-                    📅 {deliveryType === "Pickup" ? "Needed / Pickup Date" : "Preferred Delivery Date"} <span className="label-req">*</span>
+                    📅 Delivery / Pickup Date <span className="label-req">*</span>
                   </label>
                   <input
                     type="date"
@@ -610,65 +627,93 @@ const PlaceOrder = () => {
             </div>
           </div>
 
-          {/* 3. Official Payment Accounts with 1-Click Copy */}
-          <div className="checkout-section-card aura-glass">
+          {/* 3. Official Payment Method Symbols & Copyable Details Pop-up */}
+          <div className="checkout-section-card aura-glass payment-method-selector-card">
             <div className="section-card-header-row">
-              <h2 className="section-card-title">💳 3. Official Payment Methods</h2>
-              <span className="copy-hint-pill">1-Click Copy</span>
+              <h2 className="section-card-title">💳 3. Choose Payment Method</h2>
+              <span className="copy-hint-pill">Tap Symbol to View & Copy Account</span>
             </div>
             <p className="payment-instructions-sub">
-              Transfer your declared prepayment deposit (<strong>{effectivePrepayment} {settings.currency}</strong>) to any of the accounts below:
+              Tap any payment provider symbol below to pop up the copyable account number and account name for your transfer:
             </p>
 
-            <div className="payment-accounts-list">
+            {/* Provider Symbols Row / Grid */}
+            <div className="payment-symbols-grid">
               {activePaymentMethods.map((pm, idx) => {
-                const isSelected = selectedPaymentMethod === pm.provider;
-                const isCopied = copiedId === pm._id || copiedId === idx;
+                const isSelected = (selectedPaymentMethod || activePaymentMethods[0]?.provider) === pm.provider;
+                const info = getPaymentProviderInfo(pm.provider);
                 return (
-                  <div
+                  <button
                     key={pm._id || idx}
-                    className={`payment-option-card ${isSelected ? "selected" : ""}`}
+                    type="button"
+                    className={`payment-symbol-chip brand-${info.key} ${isSelected ? "selected" : ""}`}
                     onClick={() => {
                       setSelectedPaymentMethod(pm.provider);
                       setSelectedPaymentAccount(pm.accountNumber);
                     }}
                   >
-                    <div className="pm-card-top">
-                      <div className="pm-card-title-wrap">
-                        <span className="pm-radio-circle"></span>
-                        <strong className="pm-card-provider">{pm.provider}</strong>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`btn-copy-account ${isCopied ? "copied" : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyAccount(pm.accountNumber, pm._id || idx);
-                        }}
-                      >
-                        {isCopied ? "✓ Copied!" : "📋 Copy Number"}
-                      </button>
-                    </div>
-
-                    <div className="pm-card-data-row">
-                      <div className="pm-data-item">
-                        <span className="pm-data-label">Account Name:</span>
-                        <span className="pm-data-val">{pm.accountName}</span>
-                      </div>
-                      <div className="pm-data-item">
-                        <span className="pm-data-label">Account Number:</span>
-                        <span className="pm-data-val code-font">{pm.accountNumber}</span>
-                      </div>
-                    </div>
-
-                    {pm.instructions && (
-                      <p className="pm-instruction-note">💡 {pm.instructions}</p>
-                    )}
-                  </div>
+                    <BankLogo provider={pm.provider} size={28} />
+                    <span className="pm-symbol-name">{pm.provider}</span>
+                    {isSelected && <span className="pm-symbol-check">✓</span>}
+                  </button>
                 );
               })}
             </div>
+
+            {/* Pop-up / Expanded Account Details Card with 1-Click Copy */}
+            {selectedActiveMethod && (
+              <div className="payment-active-detail-popup fade-in">
+                <div className="popup-header-bar">
+                  <div className="popup-provider-badge">
+                    <BankLogo provider={selectedActiveMethod.provider} size={36} />
+                    <div className="popup-provider-titles">
+                      <strong className="popup-provider-title">{selectedActiveMethod.provider}</strong>
+                      <span className="popup-provider-sub">Verified Account Details</span>
+                    </div>
+                  </div>
+                  <span className="popup-ready-pill">✓ 1-Click Copy Number</span>
+                </div>
+
+                <div className="popup-fields-container">
+                  {/* Account Name Row */}
+                  <div className="popup-field-card">
+                    <div className="popup-field-text">
+                      <span className="popup-field-label">Account Name</span>
+                      <strong className="popup-field-value">{selectedActiveMethod.accountName}</strong>
+                    </div>
+                  </div>
+
+                  {/* Account Number Row */}
+                  <div className="popup-field-card highlight-number-card">
+                    <div className="popup-field-text">
+                      <span className="popup-field-label">Account Number</span>
+                      <strong className="popup-field-value code-font account-number-display">
+                        {selectedActiveMethod.accountNumber}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      className={`btn-popup-copy btn-copy-highlight ${copiedId === (selectedActiveMethod._id || selectedActiveMethod.provider) ? "copied" : ""}`}
+                      onClick={() => handleCopyAccount(selectedActiveMethod.accountNumber, selectedActiveMethod._id || selectedActiveMethod.provider)}
+                    >
+                      {copiedId === (selectedActiveMethod._id || selectedActiveMethod.provider) ? "✓ Copied Number!" : "📋 Copy Number"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount to transfer banner */}
+                <div className="popup-transfer-amount-banner">
+                  <span>💰 Transfer Amount (ቀብድ):</span>
+                  <strong>{effectivePrepayment} {settings.currency}</strong>
+                </div>
+
+                {selectedActiveMethod.instructions && (
+                  <p className="popup-instruction-text">
+                    💡 <strong>Instructions:</strong> {selectedActiveMethod.instructions}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -755,8 +800,27 @@ const PlaceOrder = () => {
               <label htmlFor="payment-proof-input" className="proof-dropzone-label">
                 {paymentProofPreview ? (
                   <div className="proof-preview-container">
-                    <img src={paymentProofPreview} alt="Transfer Proof Preview" className="proof-img-tag" />
+                    <img
+                      src={paymentProofPreview}
+                      alt="Transfer Proof Preview"
+                      className="proof-img-tag"
+                      onError={(e) => {
+                        if (paymentProofFile && !e.target.dataset.retried) {
+                          e.target.dataset.retried = "true";
+                          try {
+                            e.target.src = URL.createObjectURL(paymentProofFile);
+                          } catch (err) {
+                            console.error("Preview fallback error:", err);
+                          }
+                        }
+                      }}
+                    />
                     <div className="proof-change-overlay">Click to change screenshot</div>
+                    {paymentProofFile && (
+                      <div className="proof-file-badge">
+                        📎 {paymentProofFile.name}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="proof-empty-container">

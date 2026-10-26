@@ -7,6 +7,7 @@ const foodSchema = new mongoose.Schema({
   image: { type: String, required: true },
   category: { type: String, default: "General" },
   stickers: [{ type: String }], // IDs or names of attached stickers
+  order: { type: Number, default: 0 },
 }, { timestamps: true });
 
 const foodModel = mongoose.models.item || mongoose.models.items || mongoose.model("item", foodSchema, "items");
