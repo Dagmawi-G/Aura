@@ -50,17 +50,62 @@ const PlaceOrder = () => {
   const total = subtotal + deliveryFee + urgentFee;
   const totalItemCount = getTotalItemCount ? getTotalItemCount() : cartItems.reduce((s, i) => s + i.quantity, 0);
 
+  // Helper to format local date as YYYY-MM-DD
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper to check if a date string matches today (local or UTC)
+  const isTodayDate = (dateStr) => {
+    if (!dateStr) return false;
+    const localToday = getTodayStr();
+    const utcToday = new Date().toISOString().split("T")[0];
+    return dateStr === localToday || dateStr === utcToday;
+  };
+
+  // When customer changes the pickup/delivery date
+  const handleDateChange = (val) => {
+    setDeliveryDate(val);
+    if (!val) {
+      if (isUrgent) {
+        setIsUrgent(false);
+      }
+      return;
+    }
+
+    if (isTodayDate(val)) {
+      if (!isUrgent) {
+        setIsUrgent(true);
+        const orderLabel = deliveryType === "Pickup" ? "pickup" : "delivery";
+        toast.info(
+          `⚡ Today's ${orderLabel} automatically marked as Urgent (+${configuredUrgentFee} ${settings.currency})`
+        );
+      }
+    } else {
+      if (isUrgent) {
+        setIsUrgent(false);
+      }
+    }
+  };
+
   // When toggling urgent order, auto-set date to today, or empty on uncheck
   const handleUrgentToggle = (checked) => {
     setIsUrgent(checked);
     if (checked) {
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = getTodayStr();
       setDeliveryDate(todayStr);
-      toast.info(`⚡ Urgent Same-Day Order enabled (+${configuredUrgentFee} ${settings.currency})`);
+      const orderLabel = deliveryType === "Pickup" ? "pickup" : "delivery";
+      toast.info(`⚡ Urgent Same-Day Order enabled for today's ${orderLabel} (+${configuredUrgentFee} ${settings.currency})`);
     } else {
       setDeliveryDate("");
+      toast.info("Urgent order unchecked. Please select a future date for standard order.");
     }
   };
+
 
   // Minimum required prepayment deposit (per item or configured default, capped at total)
   const minDeposit = Math.min(
@@ -163,7 +208,7 @@ const PlaceOrder = () => {
     }
 
     if (!deliveryDate) {
-      toast.error("Please select your delivery/pickup date");
+      toast.error(`Please select your ${deliveryType === "Pickup" ? "pickup" : "delivery"} date`);
       return;
     }
 
@@ -426,19 +471,20 @@ const PlaceOrder = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">
-                    📅 Delivery / Pickup Date <span className="label-req">*</span>
+                    📅 {deliveryType === "Pickup" ? "Pickup Date" : "Delivery Date"} <span className="label-req">*</span>
                   </label>
                   <input
                     type="date"
-                    className="form-input"
-                    min={new Date().toISOString().split("T")[0]}
+                    className={`form-input ${isUrgent ? "urgent-date-input" : ""}`}
+                    min={getTodayStr()}
                     value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    disabled={isUrgent}
+                    onChange={(e) => handleDateChange(e.target.value)}
                     required
                   />
                   {isUrgent && (
-                    <span className="urgent-date-hint">⚡ Locked to Today for Same-Day fulfillment</span>
+                    <span className="urgent-date-hint">
+                      ⚡ Today selected — Urgent Same-Day Order applied (+{configuredUrgentFee} {settings.currency})
+                    </span>
                   )}
                 </div>
 
@@ -488,7 +534,9 @@ const PlaceOrder = () => {
                         <span className="urgent-fee-tag">+{configuredUrgentFee} {settings.currency}</span>
                       </div>
                       <p className="urgent-subtext">
-                        Need it done and delivered today? Priority queue printing & express same-day dispatch.
+                        {deliveryType === "Pickup"
+                          ? "Need your order printed and ready for pickup today? Priority queue printing & express preparation."
+                          : "Need it done and delivered today? Priority queue printing & express same-day dispatch."}
                       </p>
                     </div>
                   </label>
