@@ -118,8 +118,8 @@ const PlaceOrder = () => {
   // Customer settles prepayment on this Order & Pay page (defaults to minDeposit)
   const [chosenPrepayment, setChosenPrepayment] = useState(null);
 
-  const effectivePrepayment = chosenPrepayment !== null
-    ? Math.min(total, Math.max(minDeposit, chosenPrepayment))
+  const effectivePrepayment = (chosenPrepayment !== null && chosenPrepayment !== "")
+    ? Math.min(total, Math.max(minDeposit, Number(chosenPrepayment) || 0))
     : minDeposit;
 
   const remainingBalance = Math.max(0, total - effectivePrepayment);
@@ -594,12 +594,32 @@ const PlaceOrder = () => {
                       className="prepay-amount-input"
                       min={minDeposit}
                       max={total}
-                      value={chosenPrepayment !== null ? chosenPrepayment : minDeposit}
-                      onChange={(e) => setChosenPrepayment(Number(e.target.value))}
-                      onBlur={(e) => {
-                        const val = Number(e.target.value);
-                        if (val < minDeposit) setChosenPrepayment(minDeposit);
-                        else if (val > total) setChosenPrepayment(total);
+                      placeholder={minDeposit ? String(minDeposit) : "0"}
+                      value={chosenPrepayment !== null ? chosenPrepayment : (minDeposit || "")}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "") {
+                          setChosenPrepayment("");
+                          return;
+                        }
+                        // Strip leading zeros before digits (e.g. "02000" -> "2000")
+                        const sanitized = val.replace(/^0+(?=\d)/, "");
+                        setChosenPrepayment(sanitized);
+                      }}
+                      onBlur={() => {
+                        if (chosenPrepayment === "" || chosenPrepayment === null) {
+                          setChosenPrepayment(minDeposit);
+                        } else {
+                          const val = Number(chosenPrepayment);
+                          if (isNaN(val) || val < minDeposit) {
+                            setChosenPrepayment(minDeposit);
+                          } else if (val > total) {
+                            setChosenPrepayment(total);
+                          } else {
+                            setChosenPrepayment(val);
+                          }
+                        }
                       }}
                     />
                     <span className="prepay-amount-currency">{settings.currency}</span>
@@ -611,14 +631,14 @@ const PlaceOrder = () => {
                   <div className="prepay-presets-row">
                     <button
                       type="button"
-                      className={`btn-prepay-preset ${chosenPrepayment === minDeposit || chosenPrepayment === null ? "active" : ""}`}
+                      className={`btn-prepay-preset ${Number(chosenPrepayment !== null && chosenPrepayment !== "" ? chosenPrepayment : minDeposit) === minDeposit ? "active" : ""}`}
                       onClick={() => setChosenPrepayment(minDeposit)}
                     >
                       Min Deposit ({minDeposit} {settings.currency})
                     </button>
                     <button
                       type="button"
-                      className={`btn-prepay-preset ${chosenPrepayment === total ? "active" : ""}`}
+                      className={`btn-prepay-preset ${Number(chosenPrepayment !== null && chosenPrepayment !== "" ? chosenPrepayment : minDeposit) === total ? "active" : ""}`}
                       onClick={() => setChosenPrepayment(total)}
                     >
                       Full Total ({total} {settings.currency})

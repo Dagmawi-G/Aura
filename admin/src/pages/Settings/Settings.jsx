@@ -260,7 +260,18 @@ const Settings = ({ url }) => {
     if (e) e.preventDefault();
     setSaving(true);
     try {
-      const res = await axios.post(`${url}/api/setting/update`, settings);
+      const cleanSettings = {
+        ...settings,
+        prepaymentPerItem: Number(settings.prepaymentPerItem) || 0,
+        urgentFee: Number(settings.urgentFee) || 0,
+        deliveryTiers: {
+          under5: Number(settings.deliveryTiers?.under5) || 0,
+          between5and10: Number(settings.deliveryTiers?.between5and10) || 0,
+          between10and15: Number(settings.deliveryTiers?.between10and15) || 0,
+          over15: Number(settings.deliveryTiers?.over15) || 0,
+        }
+      };
+      const res = await axios.post(`${url}/api/setting/update`, cleanSettings);
       if (res.data.success) {
         toast.success("Store and Payment Settings saved successfully!");
         setSettings(res.data.data);
@@ -497,12 +508,22 @@ const Settings = ({ url }) => {
                       min="0"
                       className="form-input tier-input"
                       value={tiers.under5 !== undefined ? tiers.under5 : 200}
-                      onChange={(e) =>
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, under5: Number(e.target.value) }
-                        })
-                      }
+                          deliveryTiers: {
+                            ...tiers,
+                            under5: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                          }
+                        });
+                      }}
+                      onBlur={() => {
+                        if (tiers.under5 === "" || isNaN(Number(tiers.under5))) {
+                          setSettings({ ...settings, deliveryTiers: { ...tiers, under5: 0 } });
+                        }
+                      }}
                     />
                     <span className="input-addon-text">{settings.currency}</span>
                   </div>
@@ -518,12 +539,22 @@ const Settings = ({ url }) => {
                       min="0"
                       className="form-input tier-input"
                       value={tiers.between5and10 !== undefined ? tiers.between5and10 : 350}
-                      onChange={(e) =>
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, between5and10: Number(e.target.value) }
-                        })
-                      }
+                          deliveryTiers: {
+                            ...tiers,
+                            between5and10: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                          }
+                        });
+                      }}
+                      onBlur={() => {
+                        if (tiers.between5and10 === "" || isNaN(Number(tiers.between5and10))) {
+                          setSettings({ ...settings, deliveryTiers: { ...tiers, between5and10: 0 } });
+                        }
+                      }}
                     />
                     <span className="input-addon-text">{settings.currency}</span>
                   </div>
@@ -539,12 +570,22 @@ const Settings = ({ url }) => {
                       min="0"
                       className="form-input tier-input"
                       value={tiers.between10and15 !== undefined ? tiers.between10and15 : 500}
-                      onChange={(e) =>
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, between10and15: Number(e.target.value) }
-                        })
-                      }
+                          deliveryTiers: {
+                            ...tiers,
+                            between10and15: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                          }
+                        });
+                      }}
+                      onBlur={() => {
+                        if (tiers.between10and15 === "" || isNaN(Number(tiers.between10and15))) {
+                          setSettings({ ...settings, deliveryTiers: { ...tiers, between10and15: 0 } });
+                        }
+                      }}
                     />
                     <span className="input-addon-text">{settings.currency}</span>
                   </div>
@@ -560,12 +601,22 @@ const Settings = ({ url }) => {
                       min="0"
                       className="form-input tier-input"
                       value={tiers.over15 !== undefined ? tiers.over15 : 700}
-                      onChange={(e) =>
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setSettings({
                           ...settings,
-                          deliveryTiers: { ...tiers, over15: Number(e.target.value) }
-                        })
-                      }
+                          deliveryTiers: {
+                            ...tiers,
+                            over15: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                          }
+                        });
+                      }}
+                      onBlur={() => {
+                        if (tiers.over15 === "" || isNaN(Number(tiers.over15))) {
+                          setSettings({ ...settings, deliveryTiers: { ...tiers, over15: 0 } });
+                        }
+                      }}
                     />
                     <span className="input-addon-text">{settings.currency}</span>
                   </div>
@@ -591,10 +642,20 @@ const Settings = ({ url }) => {
                     type="number"
                     min="0"
                     className="form-input tier-input"
-                    value={settings.prepaymentPerItem ?? 500}
-                    onChange={(e) =>
-                      setSettings({ ...settings, prepaymentPerItem: Number(e.target.value) })
-                    }
+                    value={settings.prepaymentPerItem !== undefined ? settings.prepaymentPerItem : 500}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSettings({
+                        ...settings,
+                        prepaymentPerItem: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                      });
+                    }}
+                    onBlur={() => {
+                      if (settings.prepaymentPerItem === "" || isNaN(Number(settings.prepaymentPerItem))) {
+                        setSettings({ ...settings, prepaymentPerItem: 0 });
+                      }
+                    }}
                   />
                   <span className="input-addon-text">{settings.currency}</span>
                 </div>
@@ -622,9 +683,19 @@ const Settings = ({ url }) => {
                     min="0"
                     className="form-input tier-input"
                     value={settings.urgentFee !== undefined ? settings.urgentFee : 100}
-                    onChange={(e) =>
-                      setSettings({ ...settings, urgentFee: Number(e.target.value) })
-                    }
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSettings({
+                        ...settings,
+                        urgentFee: val === "" ? "" : Number(val.replace(/^0+(?=\d)/, ""))
+                      });
+                    }}
+                    onBlur={() => {
+                      if (settings.urgentFee === "" || isNaN(Number(settings.urgentFee))) {
+                        setSettings({ ...settings, urgentFee: 0 });
+                      }
+                    }}
                   />
                   <span className="input-addon-text">{settings.currency}</span>
                 </div>
