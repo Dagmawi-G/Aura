@@ -157,5 +157,6 @@ input, textarea, select {
 .Toastify__toast-container--bottom-right,
 .Toastify__toast {
   z-index: 99999999 !important;
+  transform: translate3d(0, 0, 99999999px) !important;
   -webkit-transform: translate3d(0, 0, 99999999px) !important;
 }

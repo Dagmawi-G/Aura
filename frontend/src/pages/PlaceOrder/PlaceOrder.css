@@ -128,6 +128,7 @@
   font-weight: 800;
   color: #0f172a;
   outline: none;
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 

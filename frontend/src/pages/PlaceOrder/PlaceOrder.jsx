@@ -140,7 +140,7 @@ const PlaceOrder = () => {
         const matches = await searchAddisPlaces(val);
         setAddressSuggestions(matches);
         setShowAddressSuggestions(matches.length > 0);
-      } catch (e) {}
+      } catch (e) { }
     }, 250);
   };
 
@@ -688,7 +688,7 @@ const PlaceOrder = () => {
                       </div>
                       <p className="urgent-subtext">
                         {deliveryType === "Pickup"
-                        ? "Priority printing & express same-day pickup."
+                          ? "Priority printing & express same-day pickup."
                           : "Priority printing & express same-day delivery."}
                       </p>
                     </div>
