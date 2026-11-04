@@ -28,6 +28,65 @@ const getImageMimeType = (file) => {
   return mimeMap[ext] || "image/jpeg";
 };
 
+const generateProofPreview = (file) => {
+  return new Promise((resolve) => {
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+    } catch (e) {
+      console.warn("createObjectURL error:", e);
+    }
+
+    if (!objectUrl) {
+      try {
+        const mimeType = getImageMimeType(file);
+        const typedBlob = new Blob([file], { type: mimeType });
+        objectUrl = URL.createObjectURL(typedBlob);
+      } catch (err) {}
+    }
+
+    if (!objectUrl) {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Load into offscreen image to generate a lightweight, crash-proof canvas data URL (~60KB)
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const maxDim = 800;
+        let w = img.width || 800;
+        let h = img.height || 600;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const compactDataUrl = canvas.toDataURL("image/jpeg", 0.88);
+        resolve(compactDataUrl);
+      } catch (err) {
+        resolve(objectUrl);
+      }
+    };
+    img.onerror = () => {
+      resolve(objectUrl);
+    };
+    img.src = objectUrl;
+  });
+};
+
 const PlaceOrder = () => {
   const navigate = useNavigate();
   const {
@@ -93,6 +152,7 @@ const PlaceOrder = () => {
   const [selectedPaymentAccount, setSelectedPaymentAccount] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState("");
+  const [proofPreviewFailed, setProofPreviewFailed] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const previewUrlRef = useRef(null);
@@ -237,13 +297,13 @@ const PlaceOrder = () => {
     setTimeout(() => setCopiedRef(false), 2500);
   };
 
-  // Payment Screenshot Upload Handler (instant typed-Blob + guaranteed Base64 image MIME)
-  const handleProofChange = (e) => {
+  // Payment Screenshot Upload Handler (instant preview + guaranteed crash-proof compact rendering)
+  const handleProofChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Screenshot exceeds 10MB limit. Please choose a smaller image.");
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("Screenshot exceeds 15MB limit. Please choose a smaller image.");
       return;
     }
 
@@ -255,43 +315,23 @@ const PlaceOrder = () => {
     }
 
     setPaymentProofFile(file);
+    setProofPreviewFailed(false);
 
-    // Revoke previous blob URL if exists
-    if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
-      try {
-        URL.revokeObjectURL(previewUrlRef.current);
-      } catch {
-        // ignore
-      }
-    }
-
-    const mimeType = getImageMimeType(file);
-
-    // 1. Immediately create typed Blob so preview renders with 0 delay and correct image MIME
+    // 1. Instant preview via native File Object URL
     try {
-      const typedBlob = file.type === mimeType ? file : new Blob([file], { type: mimeType });
-      const objectUrl = URL.createObjectURL(typedBlob);
-      previewUrlRef.current = objectUrl;
-      setPaymentProofPreview(objectUrl);
-    } catch (err) {
-      console.warn("ObjectURL preview error:", err);
-    }
+      const quickUrl = URL.createObjectURL(file);
+      setPaymentProofPreview(quickUrl);
+    } catch (err) {}
 
-    // 2. Also read as Base64 Data URL with guaranteed image/ MIME header
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      let result = uploadEvent.target.result;
-      if (typeof result === "string") {
-        if (!result.startsWith("data:image/")) {
-          result = result.replace(/^data:[^;]*;base64,/, `data:${mimeType};base64,`);
-        }
-        setPaymentProofPreview(result);
+    // 2. Generate safe compact data URL that never fails on mobile URL string limits
+    try {
+      const safeUrl = await generateProofPreview(file);
+      if (safeUrl) {
+        setPaymentProofPreview(safeUrl);
       }
-    };
-    reader.onerror = () => {
-      // Fallback objectUrl is already set
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn("Safe preview generation error:", err);
+    }
   };
 
   const handleSubmitOrder = async (e) => {
@@ -893,45 +933,63 @@ const PlaceOrder = () => {
                 id="payment-proof-input"
                 accept="image/*,.jpg,.jpeg,.png,.webp,.jfif,.heic,.heif"
                 onChange={handleProofChange}
-                hidden
+                style={{ display: "none" }}
               />
-              <label htmlFor="payment-proof-input" className="proof-dropzone-label">
-                {paymentProofPreview ? (
+
+              {paymentProofPreview ? (
+                <div className="proof-preview-wrapper">
                   <div className="proof-preview-container">
-                    <img
-                      src={paymentProofPreview}
-                      alt="Transfer Proof Preview"
-                      className="proof-img-tag"
-                      onError={(e) => {
-                        if (paymentProofFile && !e.target.dataset.retried) {
-                          e.target.dataset.retried = "true";
-                          try {
-                            const mime = getImageMimeType(paymentProofFile);
-                            const fallbackBlob = new Blob([paymentProofFile], { type: mime });
-                            e.target.src = URL.createObjectURL(fallbackBlob);
-                          } catch (err) {
-                            console.error("Preview fallback error:", err);
-                          }
-                        }
-                      }}
-                    />
-                    <div className="proof-change-badge">
-                      <span>📷 Tap to change</span>
-                    </div>
-                    {paymentProofFile && (
+                    {!proofPreviewFailed ? (
+                      <img
+                        src={paymentProofPreview}
+                        alt="Payment Transfer Proof"
+                        className="proof-img-tag"
+                        onError={() => setProofPreviewFailed(true)}
+                      />
+                    ) : (
+                      <div className="proof-fallback-box">
+                        <span className="proof-fallback-icon">🧾</span>
+                        <div className="proof-fallback-info">
+                          <strong className="proof-fallback-name">{paymentProofFile?.name || "Payment Screenshot"}</strong>
+                          <span className="proof-fallback-sub">
+                            {paymentProofFile ? `${(paymentProofFile.size / 1024 / 1024).toFixed(2)} MB • ` : ""}Ready for submission
+                          </span>
+                          <span className="proof-fallback-badge">✓ Screenshot Attached</span>
+                        </div>
+                      </div>
+                    )}
+                    {paymentProofFile && !proofPreviewFailed && (
                       <div className="proof-file-badge">
                         📎 {paymentProofFile.name}
                       </div>
                     )}
                   </div>
-                ) : (
+                  <div className="proof-preview-actions">
+                    <label htmlFor="payment-proof-input" className="btn-change-proof">
+                      🔄 Change Screenshot
+                    </label>
+                    <button
+                      type="button"
+                      className="btn-remove-proof"
+                      onClick={() => {
+                        setPaymentProofFile(null);
+                        setPaymentProofPreview("");
+                        setProofPreviewFailed(false);
+                      }}
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label htmlFor="payment-proof-input" className="proof-dropzone-label">
                   <div className="proof-empty-container">
                     <span className="proof-icon">📷</span>
                     <strong className="proof-upload-title">Click to Upload Transfer Screenshot</strong>
-                    <span className="proof-upload-sub">Supports JPG, PNG, WEBP (&lt; 10MB)</span>
+                    <span className="proof-upload-sub">Supports JPG, PNG, WEBP (&lt; 15MB)</span>
                   </div>
-                )}
-              </label>
+                </label>
+              )}
             </div>
 
             <button

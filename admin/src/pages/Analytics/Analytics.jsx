@@ -164,20 +164,20 @@ const Analytics = ({ url }) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
-  // 10. Order Status Distribution
+  // 10. Order Status Distribution (Official 3 statuses: Payment Verified, Completed, Cancelled)
   const statusCounts = {
-    "Pending Verification": 0,
     "Payment Verified": 0,
-    "Processing / Printing": 0,
-    "Out for Delivery": 0,
-    "Ready for Pickup": 0,
     "Completed": 0,
     "Cancelled": 0
   };
 
   filteredOrders.forEach((order) => {
-    if (statusCounts[order.status] !== undefined) {
-      statusCounts[order.status] += 1;
+    if (order.status === "Completed") {
+      statusCounts["Completed"] += 1;
+    } else if (order.status === "Cancelled") {
+      statusCounts["Cancelled"] += 1;
+    } else {
+      statusCounts["Payment Verified"] += 1;
     }
   });
 
@@ -338,18 +338,6 @@ const Analytics = ({ url }) => {
               </div>
             </div>
 
-            {/* Custom Written Names */}
-            <div className="sec-card aura-card">
-              <div className="sec-card-header">
-                <span className="sec-icon">✍️</span>
-                <span className="sec-title">Custom Written Names</span>
-              </div>
-              <div className="sec-val">{customTextCount}</div>
-              <div className="sec-sub">
-                {nonCancelledOrders.length > 0 ? Math.round((customTextCount / nonCancelledOrders.length) * 100) : 0}% of orders requested custom text
-              </div>
-            </div>
-
             {/* Stickers Applied */}
             <div className="sec-card aura-card">
               <div className="sec-card-header">
@@ -374,13 +362,9 @@ const Analytics = ({ url }) => {
 
               <div className="status-funnel-list">
                 {[
-                  { key: "Pending Verification", label: "Pending Verification", color: "#f59e0b", icon: "⏳" },
                   { key: "Payment Verified", label: "Payment Verified", color: "#10b981", icon: "💳" },
-                  { key: "Processing / Printing", label: "Processing / Printing", color: "#6366f1", icon: "🖨️" },
-                  { key: "Out for Delivery", label: "Out for Delivery", color: "#2563eb", icon: "🚚" },
-                  { key: "Ready for Pickup", label: "Ready for Pickup", color: "#059669", icon: "🏬" },
-                  { key: "Completed", label: "Completed / Delivered", color: "#047857", icon: "✅" },
-                  { key: "Cancelled", label: "Cancelled", color: "#ef4444", icon: "❌" }
+                  { key: "Completed", label: "Completed Orders", color: "#047857", icon: "✅" },
+                  { key: "Cancelled", label: "Cancelled Orders", color: "#ef4444", icon: "❌" }
                 ].map((st) => {
                   const count = statusCounts[st.key] || 0;
                   const pct = filteredOrders.length > 0 ? Math.round((count / filteredOrders.length) * 100) : 0;

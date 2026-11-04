@@ -66,7 +66,7 @@ const submitGuestOrder = async (req, res) => {
       paymentProof: paymentProofFilename,
       notes: req.body.notes || "",
       deliveryDate: req.body.deliveryDate || "",
-      status: "Pending Verification"
+      status: req.body.status || "Payment Verified"
     });
 
     if (mongoose.connection.readyState === 1) {

@@ -112,19 +112,14 @@ const TrackOrder = () => {
     }
   }, [searchParams]);
 
-  const getStepActiveIndex = (status, deliveryType) => {
+  const getStepActiveIndex = (status) => {
     switch (status) {
-      case "Pending Verification":
-        return 0;
-      case "Payment Verified":
-        return 1;
-      case "Processing / Printing":
-        return 2;
-      case "Out for Delivery":
-      case "Ready for Pickup":
-        return 3;
       case "Completed":
-        return 4;
+        return 1;
+      case "Cancelled":
+        return -1;
+      case "Payment Verified":
+      case "Pending Verification":
       default:
         return 0;
     }
@@ -227,7 +222,7 @@ const TrackOrder = () => {
                   </div>
 
                   <div className="order-status-badge-wrap">
-                    <span className={`status-pill ${order.status === "Completed" ? "completed" : order.status === "Pending Verification" ? "pending" : "verified"}`}>
+                    <span className={`status-pill ${order.status === "Completed" ? "completed" : order.status === "Cancelled" ? "cancelled" : "verified"}`}>
                       {order.status}
                     </span>
                   </div>
@@ -258,30 +253,33 @@ const TrackOrder = () => {
                   </div>
                 </div>
 
-                {/* Progress Tracker Stepper (Compact & Clean) */}
-                <div className="stepper-progress-wrap">
-                  <div className="stepper-steps">
-                    {[
-                      { title: "Proof Sent", icon: "🧾" },
-                      { title: "Verified", icon: "✅" },
-                      { title: "Printing", icon: "🎨" },
-                      { title: isPickup ? "Pickup" : "Delivery", icon: isPickup ? "🏬" : "🚚" },
-                      { title: "Done", icon: "🎉" }
-                    ].map((step, idx) => {
-                      const isCompleted = idx < stepIdx;
-                      const isCurrent = idx === stepIdx;
-                      return (
-                        <div
-                          key={idx}
-                          className={`step-node ${isCompleted ? "completed" : ""} ${isCurrent ? "current" : ""}`}
-                        >
-                          <div className="step-circle">{step.icon}</div>
-                          <span className="step-title">{step.title}</span>
-                        </div>
-                      );
-                    })}
+                {/* Progress Tracker Stepper */}
+                {order.status === "Cancelled" ? (
+                  <div className="track-cancelled-notice">
+                    <span>❌ This order was cancelled. Please contact support for inquiries.</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="stepper-progress-wrap">
+                    <div className="stepper-steps two-steps">
+                      {[
+                        { title: "Payment Verified", icon: "💳" },
+                        { title: "Completed", icon: "🎉" }
+                      ].map((step, idx) => {
+                        const isDone = idx <= stepIdx;
+                        const isCurrent = idx === stepIdx;
+                        return (
+                          <div
+                            key={idx}
+                            className={`step-node ${isDone ? "completed" : ""} ${isCurrent ? "current" : ""}`}
+                          >
+                            <div className="step-circle">{step.icon}</div>
+                            <span className="step-title">{step.title}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Expandable / Collapsible Details on Mobile */}
                 <details className="track-details-accordion">

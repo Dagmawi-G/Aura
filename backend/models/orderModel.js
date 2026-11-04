@@ -38,15 +38,12 @@ const orderSchema = new mongoose.Schema({
   status: { 
     type: String, 
     enum: [
-      "Pending Verification", 
       "Payment Verified", 
-      "Processing / Printing", 
-      "Out for Delivery", 
-      "Ready for Pickup", 
       "Completed", 
-      "Cancelled"
+      "Cancelled",
+      "Pending Verification" 
     ], 
-    default: "Pending Verification" 
+    default: "Payment Verified" 
   },
   notes: { type: String, default: "" },
   deliveryDate: { type: String, default: "" }, // Preferred / needed by date (YYYY-MM-DD)

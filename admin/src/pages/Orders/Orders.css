@@ -125,6 +125,54 @@
   box-shadow: 0 8px 22px rgba(220, 38, 38, 0.22);
 }
 
+/* Completed orders styling - clean green card */
+.order-card-compact.is-completed-card {
+  border-left: 7px solid #16a34a;
+  border-color: #86efac;
+  background: #f0fdf4;              /* Soft green card */
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12);
+}
+
+.order-card-compact.is-completed-card:hover {
+  background: #e8fbf0;
+  border-color: #4ade80;
+  border-left-color: #15803d;
+  box-shadow: 0 8px 22px rgba(22, 163, 74, 0.2);
+}
+
+.order-card-compact.is-completed-card .compact-card-top {
+  border-bottom: 1px dashed rgba(22, 163, 74, 0.25);
+}
+
+.order-card-compact.is-completed-card .compact-order-num {
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.order-card-compact.is-completed-card .compact-info-box {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #bbf7d0;
+}
+
+.order-card-compact.is-completed-card .compact-card-bottom {
+  color: #15803d;
+}
+
+/* Cancelled orders styling */
+.order-card-compact.is-cancelled-card {
+  border-left: 7px solid #94a3b8;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  opacity: 0.85;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.order-card-compact.is-cancelled-card:hover {
+  opacity: 1;
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 /* Card Top Bar */
 .compact-card-top {
   display: flex;
@@ -258,6 +306,18 @@
   background: #fee2e2;
   color: #b91c1c;
   border-color: #fca5a5;
+}
+
+.compact-due-pill.completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.compact-due-pill.cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
 }
 
 /* Card Bottom Footer */

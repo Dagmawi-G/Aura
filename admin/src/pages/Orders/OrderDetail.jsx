@@ -64,13 +64,9 @@ export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
   }
 };
 
-const getAvailableStatuses = (deliveryType) => {
-  const isPickup = deliveryType === "Pickup";
+const getAvailableStatuses = () => {
   return [
-    "Pending Verification",
     "Payment Verified",
-    "Processing / Printing",
-    isPickup ? "Ready for Pickup" : "Out for Delivery",
     "Completed",
     "Cancelled",
   ];

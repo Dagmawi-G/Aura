@@ -14,7 +14,7 @@ const Navbar = ({ url }) => {
       const res = await axios.get(`${url}/api/order/list`);
       if (res.data.success) {
         const pending = res.data.data.filter(
-          (o) => o.status === "Pending Verification"
+          (o) => o.status === "Payment Verified" || o.status === "Pending Verification"
         ).length;
         setPendingCount(pending);
       }
@@ -76,7 +76,7 @@ const Navbar = ({ url }) => {
             </svg>
             <span>Live Orders</span>
             {pendingCount > 0 && (
-              <span className="nav-badge-pulse" title={`${pendingCount} Pending Verification`}>
+              <span className="nav-badge-pulse" title={`${pendingCount} Active Orders`}>
                 {pendingCount}
               </span>
             )}

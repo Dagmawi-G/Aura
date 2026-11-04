@@ -103,27 +103,31 @@ const Orders = ({ url }) => {
     }
   };
 
-  // 4 Filter categories requested: All, Urgent Orders, Normal Orders, Completed Orders
+  // Filter categories: All, Urgent Orders, Normal Orders, Completed Orders, Cancelled Orders
   const filterTabs = [
     { key: "All", label: "All" },
     { key: "Urgent", label: "⚡ Urgent Orders", isUrgentTab: true },
     { key: "Normal", label: "Normal Orders" },
-    { key: "Completed", label: "Completed Orders" }
+    { key: "Completed", label: "Completed Orders" },
+    { key: "Cancelled", label: "Cancelled Orders" }
   ];
 
   // Priority ranking:
-  // 1. Urgent (uncompleted)
-  // 2. Normal (uncompleted)
+  // 1. Urgent (active)
+  // 2. Normal (active)
   // 3. Completed
+  // 4. Cancelled
   const getOrderRank = (order) => {
+    if (order.status === "Cancelled") return 4;
     if (order.status === "Completed") return 3;
     if (order.isUrgent) return 1;
     return 2;
   };
 
-  const urgentOrdersCount = orders.filter((o) => o.isUrgent && o.status !== "Completed").length;
-  const normalOrdersCount = orders.filter((o) => !o.isUrgent && o.status !== "Completed").length;
+  const urgentOrdersCount = orders.filter((o) => o.isUrgent && o.status !== "Completed" && o.status !== "Cancelled").length;
+  const normalOrdersCount = orders.filter((o) => !o.isUrgent && o.status !== "Completed" && o.status !== "Cancelled").length;
   const completedOrdersCount = orders.filter((o) => o.status === "Completed").length;
+  const cancelledOrdersCount = orders.filter((o) => o.status === "Cancelled").length;
 
   const getTabCount = (key) => {
     switch (key) {
@@ -131,6 +135,7 @@ const Orders = ({ url }) => {
       case "Urgent": return urgentOrdersCount;
       case "Normal": return normalOrdersCount;
       case "Completed": return completedOrdersCount;
+      case "Cancelled": return cancelledOrdersCount;
       default: return 0;
     }
   };
@@ -138,13 +143,14 @@ const Orders = ({ url }) => {
   const filteredOrders = orders
     .filter((order) => {
       if (statusFilter === "All") return true;
-      if (statusFilter === "Urgent") return order.isUrgent === true && order.status !== "Completed";
-      if (statusFilter === "Normal") return !order.isUrgent && order.status !== "Completed";
+      if (statusFilter === "Urgent") return order.isUrgent === true && order.status !== "Completed" && order.status !== "Cancelled";
+      if (statusFilter === "Normal") return !order.isUrgent && order.status !== "Completed" && order.status !== "Cancelled";
       if (statusFilter === "Completed") return order.status === "Completed";
+      if (statusFilter === "Cancelled") return order.status === "Cancelled";
       return true;
     })
     .sort((a, b) => {
-      // "On all orders the order will be urgent, normal orders and completed"
+      // Order sequence: Urgent, Normal, Completed, Cancelled
       const rankA = getOrderRank(a);
       const rankB = getOrderRank(b);
       if (rankA !== rankB) return rankA - rankB;
@@ -209,23 +215,26 @@ const Orders = ({ url }) => {
           {filteredOrders.map((order) => {
             const totalMugs = getTotalMugs(order.items);
             const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
+            const isCompleted = order.status === "Completed";
+            const isCancelled = order.status === "Cancelled";
+            const showUrgent = !isCompleted && !isCancelled && order.isUrgent;
 
             return (
               <div
                 key={order._id}
-                className={`order-card-compact ${order.isUrgent ? "is-urgent-card" : ""}`}
+                className={`order-card-compact ${isCompleted ? "is-completed-card" : isCancelled ? "is-cancelled-card" : showUrgent ? "is-urgent-card" : ""}`}
                 onClick={() => navigate(`/orders/${order._id}`)}
               >
                 {/* Top: Order # + Urgent Flag + Status Pill */}
                 <div className="compact-card-top">
                   <div className="compact-id-group">
                     <span className="compact-order-num">{order.orderNumber || "ORDER"}</span>
-                    {order.isUrgent && (
+                    {showUrgent && (
                       <span className="urgent-badge-compact">⚡ URGENT</span>
                     )}
                   </div>
                   <span className={`status-pill ${getStatusClass(order.status)}`}>
-                    {order.status}
+                    {isCompleted ? "Completed" : order.status}
                   </span>
                 </div>
 
@@ -242,12 +251,28 @@ const Orders = ({ url }) => {
 
                   <div className="compact-info-box due-box">
                     <span className="compact-label">Due Date</span>
-                    <span className="compact-value due-text">
-                      📅 {order.deliveryDate || "Today"}
-                      <span className={`compact-due-pill ${countdown.status} ${order.isUrgent ? "urgent-due" : ""}`}>
-                        {countdown.badgeText}
+                    {isCompleted ? (
+                      <span className="compact-value due-text">
+                        📅 {order.deliveryDate || "Completed"}
+                        <span className="compact-due-pill completed">
+                          ✓ Completed
+                        </span>
                       </span>
-                    </span>
+                    ) : isCancelled ? (
+                      <span className="compact-value due-text">
+                        📅 {order.deliveryDate || "—"}
+                        <span className="compact-due-pill cancelled">
+                          ✕ Cancelled
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="compact-value due-text">
+                        📅 {order.deliveryDate || "Today"}
+                        <span className={`compact-due-pill ${countdown.status} ${showUrgent ? "urgent-due" : ""}`}>
+                          {countdown.badgeText}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="compact-info-box mugs-box">
