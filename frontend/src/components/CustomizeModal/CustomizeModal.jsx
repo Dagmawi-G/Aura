@@ -784,7 +784,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       {hasCartDelivery ? (
                         <span><strong>Shared Cart Location:</strong> Pin is locked to your current cart. To change address, order individually below.</span>
                       ) : (
-                        <span><strong>Search a place or tap anywhere on map</strong> to set your delivery location. Drag the blue pin to fine-tune.</span>
+                        <span><strong>Tap the exact location on the map on your own for a precise location.</strong> Drag the blue pin to fine-tune.</span>
                       )}
                     </p>
                     {!hasCartDelivery && (
@@ -902,9 +902,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                         value={customerLocation}
                         onChange={(e) => setCustomerLocation(e.target.value)}
                       />
-                      <span className="location-edit-hint">
-                        💡 Auto-detected from map. You can refine or add specific building, house, or gate number here.
-                      </span>
                     </div>
                   )}
 

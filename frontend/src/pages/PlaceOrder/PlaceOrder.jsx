@@ -7,6 +7,27 @@ import { useNavigate, Link } from "react-router-dom";
 import BankLogo, { getPaymentProviderInfo } from "../../components/BankLogos/BankLogos";
 import { searchAddisPlaces } from "../../utils/geocoding";
 
+const getImageMimeType = (file) => {
+  if (file && file.type && file.type.startsWith("image/") && file.type !== "image/octet-stream") {
+    return file.type;
+  }
+  const name = (file && file.name) || "";
+  const ext = name.split(".").pop().toLowerCase();
+  const mimeMap = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    bmp: "image/bmp",
+    svg: "image/svg+xml",
+    jfif: "image/jpeg",
+    heic: "image/heic",
+    heif: "image/heif"
+  };
+  return mimeMap[ext] || "image/jpeg";
+};
+
 const PlaceOrder = () => {
   const navigate = useNavigate();
   const {
@@ -73,6 +94,20 @@ const PlaceOrder = () => {
   const [paymentProofPreview, setPaymentProofPreview] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
+  const previewUrlRef = useRef(null);
+
+  // Clean up any created object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(previewUrlRef.current);
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
 
   // State after successful submission
   const [submittedOrder, setSubmittedOrder] = useState(null);
@@ -192,7 +227,7 @@ const PlaceOrder = () => {
     setTimeout(() => setCopiedRef(false), 2500);
   };
 
-  // Payment Screenshot Upload Handler (uses FileReader base64 for 100% reliable previews)
+  // Payment Screenshot Upload Handler (instant typed-Blob + guaranteed Base64 image MIME)
   const handleProofChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -203,7 +238,7 @@ const PlaceOrder = () => {
     }
 
     const isImage = (file.type && file.type.startsWith("image/")) ||
-      /\.(jpe?g|png|webp|gif|svg|bmp|jfif|heic)$/i.test(file.name);
+      /\.(jpe?g|png|webp|gif|svg|bmp|jfif|heic|heif)$/i.test(file.name);
     if (!isImage) {
       toast.error("Please upload an image screenshot (JPEG, PNG, WEBP).");
       return;
@@ -211,17 +246,40 @@ const PlaceOrder = () => {
 
     setPaymentProofFile(file);
 
-    // Read as Base64 Data URL so the image loads reliably in all browsers
+    // Revoke previous blob URL if exists
+    if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(previewUrlRef.current);
+      } catch {
+        // ignore
+      }
+    }
+
+    const mimeType = getImageMimeType(file);
+
+    // 1. Immediately create typed Blob so preview renders with 0 delay and correct image MIME
+    try {
+      const typedBlob = file.type === mimeType ? file : new Blob([file], { type: mimeType });
+      const objectUrl = URL.createObjectURL(typedBlob);
+      previewUrlRef.current = objectUrl;
+      setPaymentProofPreview(objectUrl);
+    } catch (err) {
+      console.warn("ObjectURL preview error:", err);
+    }
+
+    // 2. Also read as Base64 Data URL with guaranteed image/ MIME header
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
-      setPaymentProofPreview(uploadEvent.target.result);
+      let result = uploadEvent.target.result;
+      if (typeof result === "string") {
+        if (!result.startsWith("data:image/")) {
+          result = result.replace(/^data:[^;]*;base64,/, `data:${mimeType};base64,`);
+        }
+        setPaymentProofPreview(result);
+      }
     };
     reader.onerror = () => {
-      try {
-        setPaymentProofPreview(URL.createObjectURL(file));
-      } catch (err) {
-        console.error("Preview creation error:", err);
-      }
+      // Fallback objectUrl is already set
     };
     reader.readAsDataURL(file);
   };
@@ -812,11 +870,11 @@ const PlaceOrder = () => {
               Attach screenshot confirming transfer of <strong>{prepaymentAmount} {settings.currency}</strong> to {selectedPaymentMethod || "Aura"} (&lt; 10MB)
             </p>
 
-            <div className="proof-dropzone">
+            <div className={`proof-dropzone ${paymentProofPreview ? "has-preview" : ""}`}>
               <input
                 type="file"
                 id="payment-proof-input"
-                accept="image/*"
+                accept="image/*,.jpg,.jpeg,.png,.webp,.jfif,.heic,.heif"
                 onChange={handleProofChange}
                 hidden
               />
@@ -831,14 +889,18 @@ const PlaceOrder = () => {
                         if (paymentProofFile && !e.target.dataset.retried) {
                           e.target.dataset.retried = "true";
                           try {
-                            e.target.src = URL.createObjectURL(paymentProofFile);
+                            const mime = getImageMimeType(paymentProofFile);
+                            const fallbackBlob = new Blob([paymentProofFile], { type: mime });
+                            e.target.src = URL.createObjectURL(fallbackBlob);
                           } catch (err) {
                             console.error("Preview fallback error:", err);
                           }
                         }
                       }}
                     />
-                    <div className="proof-change-overlay">Click to change screenshot</div>
+                    <div className="proof-change-badge">
+                      <span>📷 Tap to change</span>
+                    </div>
                     {paymentProofFile && (
                       <div className="proof-file-badge">
                         📎 {paymentProofFile.name}
