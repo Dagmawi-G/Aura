@@ -1,10 +1,11 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import "./PlaceOrder.css";
 import { StoreContext } from "../../context/StoreContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import BankLogo, { getPaymentProviderInfo } from "../../components/BankLogos/BankLogos";
+import { searchAddisPlaces } from "../../utils/geocoding";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -28,6 +29,40 @@ const PlaceOrder = () => {
   const [customerSecondaryPhone, setCustomerSecondaryPhone] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const addressSearchRef = useRef(null);
+  const addressTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (addressSearchRef.current && !addressSearchRef.current.contains(e.target)) {
+        setShowAddressSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleAddressChange = (val) => {
+    setDeliveryAddress(val);
+    if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
+
+    if (!val || val.trim().length < 2) {
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+      return;
+    }
+
+    addressTimeoutRef.current = setTimeout(async () => {
+      try {
+        const matches = await searchAddisPlaces(val);
+        setAddressSuggestions(matches);
+        setShowAddressSuggestions(matches.length > 0);
+      } catch (e) {}
+    }, 250);
+  };
+
   const [notes, setNotes] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
 
@@ -481,16 +516,42 @@ const PlaceOrder = () => {
                 </div>
 
                 {deliveryType === "Delivery" ? (
-                  <div className="form-group">
+                  <div className="form-group checkout-address-group" ref={addressSearchRef}>
                     <label className="form-label">Delivery Address / Drop-off Details <span className="label-req">*</span></label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. Bole Medhanialem, next to Edna Mall, House #142"
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      required
-                    />
+                    <div className="checkout-address-input-wrap">
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Bole Medhanialem, next to Edna Mall, House #142"
+                        value={deliveryAddress}
+                        onChange={(e) => handleAddressChange(e.target.value)}
+                        onFocus={() => {
+                          if (addressSuggestions.length > 0) setShowAddressSuggestions(true);
+                        }}
+                        required
+                      />
+                      {showAddressSuggestions && addressSuggestions.length > 0 && (
+                        <div className="place-search-dropdown checkout-address-dropdown">
+                          {addressSuggestions.map((result, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className="place-search-item"
+                              onClick={() => {
+                                setDeliveryAddress(`${result.title}, ${result.subtitle}`);
+                                setShowAddressSuggestions(false);
+                              }}
+                            >
+                              <span className="place-item-icon">📍</span>
+                              <div className="place-item-text">
+                                <strong className="place-item-title">{result.title}</strong>
+                                <span className="place-item-subtitle">{result.subtitle}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="form-group">

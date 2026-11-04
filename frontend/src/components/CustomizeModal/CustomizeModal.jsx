@@ -6,6 +6,11 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  getNearestAddisPlace,
+  reverseGeocodeCoordinates,
+  searchAddisPlaces
+} from "../../utils/geocoding";
 
 // Fix Leaflet's broken default icon paths in Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -77,6 +82,64 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   const [routeDuration, setRouteDuration] = useState(null);
   const [isRoadRoute, setIsRoadRoute] = useState(false);
   const routingReqRef = useRef(0);
+
+  // Place search & geocoding state
+  const [placeSearchQuery, setPlaceSearchQuery] = useState("");
+  const [placeSearchResults, setPlaceSearchResults] = useState([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const searchTimeoutRef = useRef(null);
+  const searchContainerRef = useRef(null);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handlePlaceSearchInput = (val) => {
+    setPlaceSearchQuery(val);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (!val.trim()) {
+      setPlaceSearchResults([]);
+      setShowSearchDropdown(false);
+      setIsSearchingPlaces(false);
+      return;
+    }
+
+    setIsSearchingPlaces(true);
+    setShowSearchDropdown(true);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchAddisPlaces(val);
+        setPlaceSearchResults(results);
+      } catch (err) {
+        console.error("Place search error:", err);
+      } finally {
+        setIsSearchingPlaces(false);
+      }
+    }, 250);
+  };
+
+  const handleSelectPlaceResult = (result) => {
+    const fullPlaceName = `${result.title}, ${result.subtitle}`;
+    setPlaceSearchQuery(result.title);
+    setShowSearchDropdown(false);
+    setCustomerLocation(fullPlaceName);
+
+    if (mapRef.current) {
+      mapRef.current.setView([result.lat, result.lng], 15, { animate: true });
+      placeCustomerPin(result.lat, result.lng, mapRef.current, false, fullPlaceName);
+    }
+  };
 
   // Map refs
   const mapRef = useRef(null);         // leaflet map instance
@@ -205,7 +268,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
     };
   }, []);
 
-  const placeCustomerPin = async (lat, lng, map, isLocked = false) => {
+  const placeCustomerPin = async (lat, lng, map, isLocked = false, customPlaceName = null) => {
     const m = map || mapRef.current;
     if (!m) return;
 
@@ -229,15 +292,26 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
 
     const canDrag = !isLocked && !hasCartDelivery;
 
+    // Determine initial place name: customPlaceName > existing shared location > nearest known Addis place
+    const initialLocationName =
+      customPlaceName ||
+      (hasCartDelivery && cartDeliveryInfo?.customerLocation
+        ? cartDeliveryInfo.customerLocation
+        : getNearestAddisPlace(lat, lng));
+
+    if (!hasCartDelivery || !customerLocation || customPlaceName) {
+      setCustomerLocation(initialLocationName);
+    }
+
     // Place customer pin (blue)
     const marker = L.marker([lat, lng], {
       icon: makeColorIcon("#2563eb"),
       draggable: canDrag,
-      title: canDrag ? "Your delivery location (drag to adjust)" : "Shared Cart Delivery Location (Locked)",
+      title: canDrag ? initialLocationName : "Shared Cart Delivery Location (Locked)",
     }).addTo(m).bindPopup(
       canDrag
-        ? "📍 Your delivery point<br><small>Drag to adjust</small>"
-        : "<b>📍 Shared Cart Delivery Location</b><br><small>All items in this cart deliver here</small>"
+        ? `<b>📍 ${initialLocationName}</b><br><small>Drag pin to fine-tune</small>`
+        : `<b>📍 ${initialLocationName}</b><br><small>All items in this cart deliver here</small>`
     );
 
     if (canDrag) {
@@ -257,11 +331,31 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
     ).addTo(m);
 
     setIsRouting(true);
-    if (!hasCartDelivery || !customerLocation) {
-      setCustomerLocation(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-    }
-
     const reqId = ++routingReqRef.current;
+
+    // Background address refinement via reverse geocoding if user clicked or dragged manually
+    if (!isLocked && !customPlaceName && !hasCartDelivery) {
+      setIsResolvingAddress(true);
+      reverseGeocodeCoordinates(lat, lng)
+        .then((resolvedName) => {
+          if (reqId === routingReqRef.current && resolvedName) {
+            setCustomerLocation(resolvedName);
+            if (customerMarkerRef.current) {
+              customerMarkerRef.current.bindPopup(
+                `<b>📍 ${resolvedName}</b><br><small>Drag pin to fine-tune</small>`
+              );
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn("Reverse geocode fallback used:", err);
+        })
+        .finally(() => {
+          if (reqId === routingReqRef.current) {
+            setIsResolvingAddress(false);
+          }
+        });
+    }
 
     try {
       const route = await calculateRouteToStore(lat, lng);
@@ -690,7 +784,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       {hasCartDelivery ? (
                         <span><strong>Shared Cart Location:</strong> Pin is locked to your current cart. To change address, order individually below.</span>
                       ) : (
-                        <span><strong>Tap anywhere on the map (Addis Ababa only)</strong> to pin your delivery location. Drag the blue pin to fine-tune.</span>
+                        <span><strong>Search a place or tap anywhere on map</strong> to set your delivery location. Drag the blue pin to fine-tune.</span>
                       )}
                     </p>
                     {!hasCartDelivery && (
@@ -704,6 +798,60 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       </button>
                     )}
                   </div>
+
+                  {/* 🔍 Place Search Field in Picking Delivery Location */}
+                  {!hasCartDelivery && (
+                    <div className="place-search-container" ref={searchContainerRef}>
+                      <div className="place-search-input-box">
+                        <span className="place-search-icon">🔍</span>
+                        <input
+                          type="text"
+                          className="place-search-input"
+                          placeholder="Search neighborhood or place (e.g. Bole, Sarbet, CMC, Kazanchis)..."
+                          value={placeSearchQuery}
+                          onChange={(e) => handlePlaceSearchInput(e.target.value)}
+                          onFocus={() => {
+                            if (placeSearchResults.length > 0) setShowSearchDropdown(true);
+                          }}
+                        />
+                        {isSearchingPlaces && <span className="place-search-spinner"></span>}
+                        {placeSearchQuery && (
+                          <button
+                            type="button"
+                            className="place-search-clear-btn"
+                            onClick={() => {
+                              setPlaceSearchQuery("");
+                              setPlaceSearchResults([]);
+                              setShowSearchDropdown(false);
+                            }}
+                            aria-label="Clear search"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Autocomplete Dropdown */}
+                      {showSearchDropdown && placeSearchResults.length > 0 && (
+                        <div className="place-search-dropdown">
+                          {placeSearchResults.map((result, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className="place-search-item"
+                              onClick={() => handleSelectPlaceResult(result)}
+                            >
+                              <span className="place-item-icon">📍</span>
+                              <div className="place-item-text">
+                                <strong className="place-item-title">{result.title}</strong>
+                                <span className="place-item-subtitle">{result.subtitle}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Leaflet Map Container */}
                   <div
@@ -733,15 +881,31 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {/* Optional address note */}
+                  {/* Delivery Location / Drop-off Details (Displays resolved place name) */}
                   {!hasCartDelivery && (
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Add a note about your location (e.g. Bole, near X building) — optional"
-                      value={customerCoordinates ? customerLocation : ""}
-                      onChange={(e) => setCustomerLocation(e.target.value)}
-                    />
+                    <div className="location-detail-field-wrap">
+                      <div className="location-detail-header">
+                        <label className="location-detail-label">
+                          <span className="loc-pin-icon">📍</span>
+                          <span>Delivery Location / Drop-off Details</span>
+                        </label>
+                        {isResolvingAddress && (
+                          <span className="resolving-address-badge">
+                            <span className="resolving-dot"></span> Finding place name...
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        className="form-input delivery-location-display-input"
+                        placeholder="Click map or search above to select place (e.g. Bole Medhanialem, Addis Ababa)"
+                        value={customerLocation}
+                        onChange={(e) => setCustomerLocation(e.target.value)}
+                      />
+                      <span className="location-edit-hint">
+                        💡 Auto-detected from map. You can refine or add specific building, house, or gate number here.
+                      </span>
+                    </div>
                   )}
 
                   {/* Distance & Fee summary */}
