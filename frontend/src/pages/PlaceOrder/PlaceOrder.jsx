@@ -30,60 +30,60 @@ const getImageMimeType = (file) => {
 
 const generateProofPreview = (file) => {
   return new Promise((resolve) => {
-    let objectUrl = "";
-    try {
-      objectUrl = URL.createObjectURL(file);
-    } catch (e) {
-      console.warn("createObjectURL error:", e);
-    }
+    const mimeType = getImageMimeType(file);
+    const reader = new FileReader();
 
-    if (!objectUrl) {
-      try {
-        const mimeType = getImageMimeType(file);
-        const typedBlob = new Blob([file], { type: mimeType });
-        objectUrl = URL.createObjectURL(typedBlob);
-      } catch (err) {}
-    }
-
-    if (!objectUrl) {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.onerror = () => resolve("");
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    // Load into offscreen image to generate a lightweight, crash-proof canvas data URL (~60KB)
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const maxDim = 800;
-        let w = img.width || 800;
-        let h = img.height || 600;
-        if (w > maxDim || h > maxDim) {
-          if (w > h) {
-            h = Math.round((h * maxDim) / w);
-            w = maxDim;
-          } else {
-            w = Math.round((w * maxDim) / h);
-            h = maxDim;
-          }
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        const compactDataUrl = canvas.toDataURL("image/jpeg", 0.88);
-        resolve(compactDataUrl);
-      } catch (err) {
-        resolve(objectUrl);
+    reader.onload = (ev) => {
+      let rawData = ev.target?.result;
+      if (typeof rawData !== "string") {
+        resolve("");
+        return;
       }
+      if (!rawData.startsWith("data:image/")) {
+        rawData = rawData.replace(/^data:[^;]*;base64,/, `data:${mimeType};base64,`);
+      }
+
+      // Scale via canvas to optimize preview memory if large
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 1200;
+          let w = img.width || 800;
+          let h = img.height || 600;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          const outMime = mimeType.includes("png") ? "image/png" : "image/jpeg";
+          const optimized = canvas.toDataURL(outMime, 0.9);
+          resolve(optimized || rawData);
+        } catch (e) {
+          resolve(rawData);
+        }
+      };
+
+      img.onerror = () => {
+        resolve(rawData);
+      };
+
+      img.src = rawData;
     };
-    img.onerror = () => {
-      resolve(objectUrl);
+
+    reader.onerror = () => {
+      resolve("");
     };
-    img.src = objectUrl;
+
+    reader.readAsDataURL(file);
   });
 };
 
@@ -152,23 +152,10 @@ const PlaceOrder = () => {
   const [selectedPaymentAccount, setSelectedPaymentAccount] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState("");
-  const [proofPreviewFailed, setProofPreviewFailed] = useState(false);
+  const [proofLoading, setProofLoading] = useState(false);
+  const [zoomProof, setZoomProof] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [copiedRef, setCopiedRef] = useState(false);
-  const previewUrlRef = useRef(null);
-
-  // Clean up any created object URL on unmount
-  useEffect(() => {
-    return () => {
-      if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
-        try {
-          URL.revokeObjectURL(previewUrlRef.current);
-        } catch {
-          // ignore
-        }
-      }
-    };
-  }, []);
 
   // State after successful submission
   const [submittedOrder, setSubmittedOrder] = useState(null);
@@ -315,22 +302,20 @@ const PlaceOrder = () => {
     }
 
     setPaymentProofFile(file);
-    setProofPreviewFailed(false);
+    setProofLoading(true);
 
-    // 1. Instant preview via native File Object URL
     try {
-      const quickUrl = URL.createObjectURL(file);
-      setPaymentProofPreview(quickUrl);
-    } catch (err) {}
-
-    // 2. Generate safe compact data URL that never fails on mobile URL string limits
-    try {
-      const safeUrl = await generateProofPreview(file);
-      if (safeUrl) {
-        setPaymentProofPreview(safeUrl);
+      const preview = await generateProofPreview(file);
+      if (preview) {
+        setPaymentProofPreview(preview);
+      } else {
+        toast.error("Could not preview this image format. Please select a standard image.");
       }
     } catch (err) {
-      console.warn("Safe preview generation error:", err);
+      console.error("Preview error:", err);
+      toast.error("Failed to load image preview.");
+    } finally {
+      setProofLoading(false);
     }
   };
 
@@ -939,28 +924,19 @@ const PlaceOrder = () => {
               {paymentProofPreview ? (
                 <div className="proof-preview-wrapper">
                   <div className="proof-preview-container">
-                    {!proofPreviewFailed ? (
-                      <img
-                        src={paymentProofPreview}
-                        alt="Payment Transfer Proof"
-                        className="proof-img-tag"
-                        onError={() => setProofPreviewFailed(true)}
-                      />
-                    ) : (
-                      <div className="proof-fallback-box">
-                        <span className="proof-fallback-icon">🧾</span>
-                        <div className="proof-fallback-info">
-                          <strong className="proof-fallback-name">{paymentProofFile?.name || "Payment Screenshot"}</strong>
-                          <span className="proof-fallback-sub">
-                            {paymentProofFile ? `${(paymentProofFile.size / 1024 / 1024).toFixed(2)} MB • ` : ""}Ready for submission
-                          </span>
-                          <span className="proof-fallback-badge">✓ Screenshot Attached</span>
-                        </div>
-                      </div>
-                    )}
-                    {paymentProofFile && !proofPreviewFailed && (
+                    <img
+                      src={paymentProofPreview}
+                      alt="Payment Transfer Proof"
+                      className="proof-img-tag"
+                      onClick={() => setZoomProof(paymentProofPreview)}
+                      title="Click to view full size"
+                    />
+                    <div className="proof-view-hint" onClick={() => setZoomProof(paymentProofPreview)}>
+                      <span>🔍 Tap image to view full</span>
+                    </div>
+                    {paymentProofFile && (
                       <div className="proof-file-badge">
-                        📎 {paymentProofFile.name}
+                        📎 {paymentProofFile.name} ({(paymentProofFile.size / 1024 / 1024).toFixed(2)} MB)
                       </div>
                     )}
                   </div>
@@ -974,12 +950,16 @@ const PlaceOrder = () => {
                       onClick={() => {
                         setPaymentProofFile(null);
                         setPaymentProofPreview("");
-                        setProofPreviewFailed(false);
                       }}
                     >
                       ✕ Remove
                     </button>
                   </div>
+                </div>
+              ) : proofLoading ? (
+                <div className="proof-loading-box">
+                  <div className="proof-loading-spinner"></div>
+                  <span className="proof-loading-text">Loading screenshot preview...</span>
                 </div>
               ) : (
                 <label htmlFor="payment-proof-input" className="proof-dropzone-label">
@@ -1006,6 +986,26 @@ const PlaceOrder = () => {
           </div>
         </div>
       </form>
+
+      {/* Lightbox Modal for Payment Proof Screenshot Preview */}
+      {zoomProof && (
+        <div className="proof-zoom-backdrop" onClick={() => setZoomProof(null)}>
+          <div className="proof-zoom-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="proof-zoom-close"
+              onClick={() => setZoomProof(null)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <img src={zoomProof} alt="Payment Transfer Proof" className="proof-zoom-img" />
+            <div className="proof-zoom-footer">
+              <span>{paymentProofFile?.name || "Payment Transfer Proof"}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

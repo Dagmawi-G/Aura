@@ -828,51 +828,131 @@
   object-fit: contain;
   border-radius: var(--radius-sm);
   display: block;
+  cursor: zoom-in;
+  transition: transform 0.15s ease;
 }
 
-.proof-fallback-box {
+.proof-img-tag:active {
+  transform: scale(0.99);
+}
+
+.proof-view-hint {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+.proof-view-hint:hover {
+  background: #0f172a;
+  transform: translateY(-1px);
+}
+
+.proof-loading-box {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1.5rem 1rem;
-  text-align: center;
-  width: 100%;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
 }
 
-.proof-fallback-icon {
-  font-size: 2.2rem;
+.proof-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.proof-fallback-info {
+.proof-loading-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* ── Lightbox / Zoom Modal for Payment Proof ── */
+.proof-zoom-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.proof-zoom-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  background: #000000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
-.proof-fallback-name {
-  font-size: 0.88rem;
-  color: #1e293b;
-  word-break: break-all;
+.proof-zoom-img {
+  max-width: 88vw;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
 }
 
-.proof-fallback-sub {
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-.proof-fallback-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.72rem;
+.proof-zoom-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #15803d;
-  background: #dcfce7;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.proof-zoom-close:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  transform: scale(1.08);
+}
+
+.proof-zoom-footer {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .proof-preview-actions {
