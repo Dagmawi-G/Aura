@@ -431,9 +431,6 @@ const PlaceOrder = () => {
                   onChange={(e) => setCustomerName(e.target.value)}
                   required
                 />
-                <span className="form-field-hint" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
-                  Please enter the buyer's real name for order contact & receipt (not the custom written name printed on the item).
-                </span>
               </div>
 
               <div className="form-row">
@@ -530,8 +527,8 @@ const PlaceOrder = () => {
                       </div>
                       <p className="urgent-subtext">
                         {deliveryType === "Pickup"
-                          ? "Need your order printed and ready for pickup today? Priority queue printing & express preparation."
-                          : "Need it done and delivered today? Priority queue printing & express same-day dispatch."}
+                        ? "Priority printing & express same-day pickup."
+                          : "Priority printing & express same-day delivery."}
                       </p>
                     </div>
                   </label>
