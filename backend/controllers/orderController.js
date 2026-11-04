@@ -133,6 +133,9 @@ const updateStatus = async (req, res) => {
   }
 };
 
+// Helper to escape regex special characters
+const escapeRegex = (str) => (str ? str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "");
+
 // Track order by Order Number or Phone Number
 const trackOrder = async (req, res) => {
   try {
@@ -142,21 +145,43 @@ const trackOrder = async (req, res) => {
     }
 
     const trimmedQuery = query.trim();
+    const queryDigits = trimmedQuery.replace(/\D/g, "");
+    const escapedQuery = escapeRegex(trimmedQuery);
+
+    // Always match orderNumber (case-insensitive) or exact phone
+    const orConditions = [
+      { orderNumber: { $regex: new RegExp(`^${escapedQuery}$`, "i") } },
+      { customerPhone: trimmedQuery },
+      { secondaryPhone: trimmedQuery }
+    ];
+
+    let phoneRegex = null;
+    if (queryDigits.length >= 8) {
+      // In Ethiopian numbers (+2519... / 09... / +2517... / 07...), the last 9 digits uniquely identify subscriber
+      const coreDigits = queryDigits.length >= 9 ? queryDigits.slice(-9) : queryDigits;
+      // Allow optional formatting like spaces, hyphens, brackets, dots
+      const digitPattern = coreDigits.split("").join("[\\s\\-\\(\\)\\.]*");
+      phoneRegex = new RegExp(digitPattern, "i");
+
+      orConditions.push({ customerPhone: { $regex: phoneRegex } });
+      orConditions.push({ secondaryPhone: { $regex: phoneRegex } });
+    }
+
     let orders = [];
 
     if (mongoose.connection.readyState === 1) {
-      // Search by orderNumber or phone
-      orders = await orderModel.find({
-        $or: [
-          { orderNumber: { $regex: new RegExp(`^${trimmedQuery}$`, "i") } },
-          { customerPhone: trimmedQuery }
-        ]
-      }).sort({ createdAt: -1 });
+      orders = await orderModel.find({ $or: orConditions }).sort({ createdAt: -1, date: -1 });
     } else {
       const qLower = trimmedQuery.toLowerCase();
-      orders = Array.from(inMemoryOrders.values()).filter(
-        (o) => (o.orderNumber && o.orderNumber.toLowerCase() === qLower) || o.customerPhone === trimmedQuery
-      );
+      orders = Array.from(inMemoryOrders.values()).filter((o) => {
+        if (o.orderNumber && o.orderNumber.toLowerCase() === qLower) return true;
+        if (o.customerPhone === trimmedQuery || o.secondaryPhone === trimmedQuery) return true;
+        if (phoneRegex) {
+          if (o.customerPhone && phoneRegex.test(o.customerPhone)) return true;
+          if (o.secondaryPhone && phoneRegex.test(o.secondaryPhone)) return true;
+        }
+        return false;
+      }).sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
     }
 
     if (!orders || orders.length === 0) {

@@ -1387,7 +1387,8 @@
   border: 1px solid #bfdbfe;
   border-radius: 10px;
   padding: 10px 14px;
-  margin-bottom: 14px;
+  margin-top: 14px;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 10px;

@@ -107,22 +107,14 @@ const PlaceOrder = () => {
   };
 
 
-  // Minimum required prepayment deposit (per item or configured default, capped at total)
-  const minDeposit = Math.min(
+  // Fixed required prepayment deposit (automatically calculated and fixed, capped at total)
+  const prepaymentAmount = Math.min(
     total,
     computePrepayment
       ? computePrepayment(totalItemCount)
       : (settings.prepaymentPerItem ?? 500) * totalItemCount
   );
-
-  // Customer settles prepayment on this Order & Pay page (defaults to minDeposit)
-  const [chosenPrepayment, setChosenPrepayment] = useState(null);
-
-  const effectivePrepayment = (chosenPrepayment !== null && chosenPrepayment !== "")
-    ? Math.min(total, Math.max(minDeposit, Number(chosenPrepayment) || 0))
-    : minDeposit;
-
-  const remainingBalance = Math.max(0, total - effectivePrepayment);
+  const remainingBalance = Math.max(0, total - prepaymentAmount);
 
   // Determine delivery type from cart
   const deliveryType = cartDeliveryInfo?.deliveryType || (cartItems.some((i) => i.deliveryType === "Delivery") ? "Delivery" : "Pickup");
@@ -238,7 +230,7 @@ const PlaceOrder = () => {
       formData.append("urgentFee", urgentFee);
       formData.append("subtotal", subtotal);
       formData.append("totalAmount", total);
-      formData.append("prepaymentAmount", effectivePrepayment);
+      formData.append("prepaymentAmount", prepaymentAmount);
       formData.append("paymentMethod", selectedPaymentMethod);
       formData.append("paymentAccount", selectedPaymentAccount);
       formData.append("notes", notes.trim());
@@ -248,6 +240,9 @@ const PlaceOrder = () => {
       const res = await axios.post(`${url}/api/order/submit`, formData);
       if (res.data.success) {
         setSubmittedOrder(res.data.order);
+        if (res.data.order?.orderNumber) {
+          localStorage.setItem("aura_last_order", res.data.order.orderNumber);
+        }
         clearCart();
         toast.success("Order placed successfully! Admin will verify your transfer proof.");
       } else {
@@ -573,89 +568,23 @@ const PlaceOrder = () => {
             </div>
           </div>
 
-          {/* 2. Settle Prepayment (ቀብድ) Amount */}
+          {/* 2. Fixed Prepayment (ቀብድ) */}
           <div className="checkout-section-card aura-glass prepay-checkout-card">
             <div className="section-card-header-row">
-              <h2 className="section-card-title">💰 2. Settle Prepayment (ቀብድ)</h2>
-              <span className="min-deposit-pill">Min Deposit: {minDeposit} {settings.currency}</span>
+              <h2 className="section-card-title">💰 2. Prepayment (ቀብድ)</h2>
+              <span className="min-deposit-pill">Fixed Amount</span>
             </div>
 
-            <p className="payment-instructions-sub">
-              To begin production of your custom items, a minimum deposit of <strong>{minDeposit} {settings.currency}</strong> is required. You can pay the minimum now or pay the full order amount upfront.
-            </p>
-
             <div className="prepay-settle-box">
-              <div className="prepay-settle-controls">
-                <div className="prepay-amount-input-block">
-                  <label className="prepay-field-label">Prepayment (ቀብድ) to Transfer Now:</label>
-                  <div className="prepay-amount-input-wrap">
-                    <input
-                      type="number"
-                      className="prepay-amount-input"
-                      min={minDeposit}
-                      max={total}
-                      placeholder={minDeposit ? String(minDeposit) : "0"}
-                      value={chosenPrepayment !== null ? chosenPrepayment : (minDeposit || "")}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === "") {
-                          setChosenPrepayment("");
-                          return;
-                        }
-                        // Strip leading zeros before digits (e.g. "02000" -> "2000")
-                        const sanitized = val.replace(/^0+(?=\d)/, "");
-                        setChosenPrepayment(sanitized);
-                      }}
-                      onBlur={() => {
-                        if (chosenPrepayment === "" || chosenPrepayment === null) {
-                          setChosenPrepayment(minDeposit);
-                        } else {
-                          const val = Number(chosenPrepayment);
-                          if (isNaN(val) || val < minDeposit) {
-                            setChosenPrepayment(minDeposit);
-                          } else if (val > total) {
-                            setChosenPrepayment(total);
-                          } else {
-                            setChosenPrepayment(val);
-                          }
-                        }
-                      }}
-                    />
-                    <span className="prepay-amount-currency">{settings.currency}</span>
-                  </div>
-                </div>
-
-                <div className="prepay-presets-block">
-                  <label className="prepay-field-label">Quick Presets:</label>
-                  <div className="prepay-presets-row">
-                    <button
-                      type="button"
-                      className={`btn-prepay-preset ${Number(chosenPrepayment !== null && chosenPrepayment !== "" ? chosenPrepayment : minDeposit) === minDeposit ? "active" : ""}`}
-                      onClick={() => setChosenPrepayment(minDeposit)}
-                    >
-                      Min Deposit ({minDeposit} {settings.currency})
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn-prepay-preset ${Number(chosenPrepayment !== null && chosenPrepayment !== "" ? chosenPrepayment : minDeposit) === total ? "active" : ""}`}
-                      onClick={() => setChosenPrepayment(total)}
-                    >
-                      Full Total ({total} {settings.currency})
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               {/* Prepayment Summary Cards */}
               <div className="prepay-summary-grid">
                 <div className="prepay-sum-card deposit-now">
-                  <span className="sum-label">✅ To Transfer Now (ቀብድ)</span>
-                  <strong className="sum-amount">{effectivePrepayment} {settings.currency}</strong>
+                  <span className="sum-label">✅ Prepayment Amount (To Transfer Now)</span>
+                  <strong className="sum-amount">{prepaymentAmount} {settings.currency}</strong>
                   <span className="sum-desc">Upload screenshot below</span>
                 </div>
                 <div className="prepay-sum-card balance-later">
-                  <span className="sum-label">📦 Remaining on {deliveryType}</span>
+                  <span className="sum-label">📦 Remaining Balance (on {deliveryType})</span>
                   <strong className="sum-amount">{remainingBalance} {settings.currency}</strong>
                   <span className="sum-desc">Collect upon handover</span>
                 </div>
@@ -740,7 +669,7 @@ const PlaceOrder = () => {
                 {/* Amount to transfer banner */}
                 <div className="popup-transfer-amount-banner">
                   <span>💰 Transfer Amount (ቀብድ):</span>
-                  <strong>{effectivePrepayment} {settings.currency}</strong>
+                  <strong>{prepaymentAmount} {settings.currency}</strong>
                 </div>
 
                 {selectedActiveMethod.instructions && (
@@ -800,11 +729,11 @@ const PlaceOrder = () => {
                   {total} {settings.currency}
                 </span>
               </div>
-              {effectivePrepayment > 0 && (
+              {prepaymentAmount > 0 && (
                 <>
                   <div className="total-detail-line prepayment-line">
                     <span>💰 ቀብድ (Pay Now):</span>
-                    <span className="prepay-now-val">{effectivePrepayment} {settings.currency}</span>
+                    <span className="prepay-now-val">{prepaymentAmount} {settings.currency}</span>
                   </div>
                   <div className="total-detail-line remaining-line">
                     <span>🕒 Remaining on {deliveryType}:</span>
@@ -822,7 +751,7 @@ const PlaceOrder = () => {
               <span className="label-req">* Required</span>
             </div>
             <p className="proof-desc">
-              Attach screenshot confirming transfer of <strong>{effectivePrepayment} {settings.currency}</strong> to {selectedPaymentMethod || "Aura"} (&lt; 10MB)
+              Attach screenshot confirming transfer of <strong>{prepaymentAmount} {settings.currency}</strong> to {selectedPaymentMethod || "Aura"} (&lt; 10MB)
             </p>
 
             <div className="proof-dropzone">
@@ -873,7 +802,7 @@ const PlaceOrder = () => {
               className="btn-submit-order"
               disabled={submitting}
             >
-              {submitting ? "Submitting Order..." : `Submit Order — Pay ቀብድ ${effectivePrepayment} ${settings.currency} Now`}
+              {submitting ? "Submitting Order..." : `Submit Order — Pay ቀብድ ${prepaymentAmount} ${settings.currency} Now`}
             </button>
 
             <p className="instant-verification-note">

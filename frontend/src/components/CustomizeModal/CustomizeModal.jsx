@@ -342,28 +342,22 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
       if (isAlreadySelected) {
         setSelectedStickers([]);
       } else {
-        // If you choose the fixed sticker you cannot add other stickers
+        // Fixed stickers do not allow multiple selections and automatically deselect any previously selected Mixed stickers
         setSelectedStickers([
           { name: sticker.name, image: sticker.image, id: sticker._id, stickerType: "Fixed" }
         ]);
-        toast.info(`Selected "${sticker.name}". Fixed sticker chosen (cannot add other stickers).`);
       }
     } else {
-      // If a Fixed sticker is currently selected, you cannot add other stickers
-      const hasFixedSelected = selectedStickers.some(
-        (s) => s.stickerType === "Fixed" || fixedStickers.some((f) => f.name === s.name)
-      );
-      if (hasFixedSelected) {
-        toast.warning("A Fixed sticker is already selected. You cannot add other stickers unless you deselect it first.");
-        return;
-      }
-
+      // Mixed sticker
       if (isAlreadySelected) {
         setSelectedStickers(selectedStickers.filter((s) => s.name !== sticker.name));
       } else {
-        // Mix stickers can choose multiple stickers
+        // Selecting a Mixed sticker automatically deselects any previously selected Fixed stickers, allowing multiple Mixed stickers
+        const currentMixOnly = selectedStickers.filter(
+          (s) => (s.stickerType || "Mix") !== "Fixed" && !fixedStickers.some((f) => f.name === s.name)
+        );
         setSelectedStickers([
-          ...selectedStickers,
+          ...currentMixOnly,
           { name: sticker.name, image: sticker.image, id: sticker._id, stickerType: "Mix" }
         ]);
       }
@@ -529,26 +523,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                 </button>
               </div>
 
-              {/* Mix Theme Guidance Note */}
-              {stickerTab === "Mix" && (
-                <div className="mix-theme-note-card">
-                  <span className="mix-note-icon">💡</span>
-                  <div className="mix-note-text">
-                    <strong>Note:</strong> Consider the theme when choosing your stickers (Multiple stickers allowed).
-                  </div>
-                </div>
-              )}
-
-              {/* Fixed Single Choice Guidance Note */}
-              {stickerTab === "Fixed" && (
-                <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
-                  <span className="mix-note-icon">📌</span>
-                  <div className="mix-note-text" style={{ color: "#92400e" }}>
-                    <strong>Note:</strong> If you choose a Fixed sticker, you cannot add other stickers (Single sticker only).
-                  </div>
-                </div>
-              )}
-
               {/* Sticker Grid */}
               <div className="cust-stickers-grid">
                 {(stickerTab === "Mix" ? mixStickers : fixedStickers).length === 0 ? (
@@ -576,6 +550,26 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   })
                 )}
               </div>
+
+              {/* Mix Theme Guidance Note */}
+              {stickerTab === "Mix" && (
+                <div className="mix-theme-note-card">
+                  <span className="mix-note-icon">💡</span>
+                  <div className="mix-note-text">
+                    <strong>Note:</strong> Consider the theme when choosing your stickers (Multiple stickers allowed).
+                  </div>
+                </div>
+              )}
+
+              {/* Fixed Single Choice Guidance Note */}
+              {stickerTab === "Fixed" && (
+                <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
+                  <span className="mix-note-icon">📌</span>
+                  <div className="mix-note-text" style={{ color: "#92400e" }}>
+                    <strong>Note:</strong> If you choose a Fixed sticker, you cannot add other stickers (Single sticker only).
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. Written Name (Max 7 characters, English words & numbers only) */}
@@ -605,12 +599,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   value={customText}
                   onChange={handleWrittenNameChange}
                 />
-
-                {/* English words and numbers note */}
-                <div className="written-name-note-box">
-                  <span className="note-icon">ℹ️</span>
-                  <span><strong>Note:</strong> Use only English words and numbers (Max 7 characters).</span>
-                </div>
               </div>
             </div>
 
