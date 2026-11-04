@@ -4,6 +4,7 @@ import "./OrderDetail.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
+import DeliveryRouteModal from "../../components/DeliveryRouteModal/DeliveryRouteModal";
 
 export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
   if (!deliveryDate) {
@@ -97,6 +98,7 @@ const OrderDetail = ({ url }) => {
   const [loading, setLoading] = useState(true);
   const [selectedProofImg, setSelectedProofImg] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showRouteModal, setShowRouteModal] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -298,28 +300,56 @@ const OrderDetail = ({ url }) => {
                   <span className="metric-val highlight-fee">{order.deliveryFee} {currency}</span>
                 </div>
                 {order.deliveryAddress && (
-                  <div className="metric-row address-row">
-                    <span className="metric-label">Address</span>
-                    <span className="metric-val">{order.deliveryAddress}</span>
+                  <div
+                    className="metric-row address-row address-clickable-box"
+                    onClick={() => setShowRouteModal(true)}
+                    title="Click to view interactive delivery route map & GPS navigation"
+                  >
+                    <span className="metric-label">Delivery Address</span>
+                    <div className="address-display-col">
+                      <span className="metric-val address-interactive-text">
+                        📍 {order.deliveryAddress}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn-address-map-pill"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowRouteModal(true);
+                        }}
+                      >
+                        🗺️ View Delivery Route Map
+                      </button>
+                    </div>
                   </div>
                 )}
-                {/* Google Maps link */}
-                {mapUrl ? (
-                  <a
-                    href={mapUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-map-link"
+                {/* Delivery Map Actions */}
+                <div className="route-actions-group">
+                  <button
+                    type="button"
+                    className="btn-map-link btn-route-primary"
+                    onClick={() => setShowRouteModal(true)}
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11" />
                     </svg>
-                    View Customer Location on Google Maps
-                  </a>
-                ) : (
-                  <p className="no-map-note">📍 No GPS coordinates stored for this order</p>
-                )}
+                    <span>Pop up Delivery Route Map</span>
+                  </button>
+                  {mapUrl && (
+                    <a
+                      href={mapUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-map-link btn-route-secondary"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      Google Maps Pin
+                    </a>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="pickup-hint">Customer will pick up at store location.</p>
@@ -575,6 +605,16 @@ const OrderDetail = ({ url }) => {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Delivery Road Route Map Modal */}
+      {showRouteModal && (
+        <DeliveryRouteModal
+          order={order}
+          isOpen={showRouteModal}
+          onClose={() => setShowRouteModal(false)}
+          url={url}
+        />
       )}
     </div>
   );

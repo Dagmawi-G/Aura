@@ -7,6 +7,7 @@ import OrderDetail from "./pages/Orders/OrderDetail";
 import Stickers from "./pages/Stickers/Stickers";
 import Settings from "./pages/Settings/Settings";
 import Admins from "./pages/Admins/Admins";
+import Analytics from "./pages/Analytics/Analytics";
 import Login from "./pages/Login/Login";
 import NotificationModal from "./components/NotificationModal/NotificationModal";
 import { ToastContainer } from "react-toastify";
@@ -64,7 +65,8 @@ const App = () => {
           <Route path="/order/:orderId" element={<OrderDetail url={url} />} />
           <Route path="/stickers" element={<Stickers url={url} />} />
           <Route path="/settings" element={<Settings url={url} />} />
-          <Route path="/admins" element={<Admins url={url} />} />
+          <Route path="/analytics" element={<Analytics url={url} />} />
+          <Route path="/admins" element={<Navigate to="/analytics" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

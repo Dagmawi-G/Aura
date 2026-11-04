@@ -50,6 +50,7 @@ const PlaceOrder = () => {
   const [customerSecondaryPhone, setCustomerSecondaryPhone] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [customerCoordinates, setCustomerCoordinates] = useState(null);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
   const addressSearchRef = useRef(null);
@@ -189,7 +190,7 @@ const PlaceOrder = () => {
   // Determine delivery type from cart
   const deliveryType = cartDeliveryInfo?.deliveryType || (cartItems.some((i) => i.deliveryType === "Delivery") ? "Delivery" : "Pickup");
 
-  // Pre-fill location if any in cart
+  // Pre-fill location and coordinates if any in cart
   useEffect(() => {
     if (cartDeliveryInfo?.customerLocation && cartDeliveryInfo.customerLocation !== "Store Pickup") {
       setDeliveryAddress(cartDeliveryInfo.customerLocation);
@@ -197,6 +198,15 @@ const PlaceOrder = () => {
       const itemWithLoc = cartItems.find((i) => i.customerLocation && i.customerLocation !== "Store Pickup");
       if (itemWithLoc) {
         setDeliveryAddress(itemWithLoc.customerLocation);
+      }
+    }
+
+    if (cartDeliveryInfo?.customerCoordinates) {
+      setCustomerCoordinates(cartDeliveryInfo.customerCoordinates);
+    } else if (cartItems.length > 0) {
+      const itemWithCoords = cartItems.find((i) => i.customerCoordinates && (i.customerCoordinates.lat || i.customerCoordinates.lng));
+      if (itemWithCoords) {
+        setCustomerCoordinates(itemWithCoords.customerCoordinates);
       }
     }
   }, [cartDeliveryInfo, cartItems]);
@@ -317,6 +327,10 @@ const PlaceOrder = () => {
       formData.append("deliveryType", deliveryType);
       formData.append("deliveryDate", deliveryDate);
       formData.append("deliveryAddress", deliveryAddress.trim());
+      const coords = customerCoordinates || cartDeliveryInfo?.customerCoordinates || cartItems[0]?.customerCoordinates || null;
+      if (coords && coords.lat && coords.lng) {
+        formData.append("customerCoordinates", JSON.stringify(coords));
+      }
       formData.append("distanceKm", cartDeliveryInfo?.distanceKm || cartItems[0]?.distanceKm || 0);
       formData.append("deliveryFee", deliveryFee);
       formData.append("isUrgent", isUrgent);
@@ -597,6 +611,9 @@ const PlaceOrder = () => {
                               className="place-search-item"
                               onClick={() => {
                                 setDeliveryAddress(`${result.title}, ${result.subtitle}`);
+                                if (result.lat && result.lng) {
+                                  setCustomerCoordinates({ lat: result.lat, lng: result.lng });
+                                }
                                 setShowAddressSuggestions(false);
                               }}
                             >

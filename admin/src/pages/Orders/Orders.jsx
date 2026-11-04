@@ -3,6 +3,7 @@ import "./Orders.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import DeliveryRouteModal from "../../components/DeliveryRouteModal/DeliveryRouteModal";
 
 export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
   if (!deliveryDate) {
@@ -67,6 +68,7 @@ const Orders = ({ url }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("All");
+  const [activeRouteOrder, setActiveRouteOrder] = useState(null);
 
   const fetchOrders = async () => {
     try {
@@ -101,17 +103,52 @@ const Orders = ({ url }) => {
     }
   };
 
+  // 4 Filter categories requested: All, Urgent Orders, Normal Orders, Completed Orders
+  const filterTabs = [
+    { key: "All", label: "All" },
+    { key: "Urgent", label: "⚡ Urgent Orders", isUrgentTab: true },
+    { key: "Normal", label: "Normal Orders" },
+    { key: "Completed", label: "Completed Orders" }
+  ];
+
+  // Priority ranking:
+  // 1. Urgent (uncompleted)
+  // 2. Normal (uncompleted)
+  // 3. Completed
+  const getOrderRank = (order) => {
+    if (order.status === "Completed") return 3;
+    if (order.isUrgent) return 1;
+    return 2;
+  };
+
+  const urgentOrdersCount = orders.filter((o) => o.isUrgent && o.status !== "Completed").length;
+  const normalOrdersCount = orders.filter((o) => !o.isUrgent && o.status !== "Completed").length;
+  const completedOrdersCount = orders.filter((o) => o.status === "Completed").length;
+
+  const getTabCount = (key) => {
+    switch (key) {
+      case "All": return orders.length;
+      case "Urgent": return urgentOrdersCount;
+      case "Normal": return normalOrdersCount;
+      case "Completed": return completedOrdersCount;
+      default: return 0;
+    }
+  };
+
   const filteredOrders = orders
     .filter((order) => {
       if (statusFilter === "All") return true;
-      if (statusFilter === "⚡ Urgent Orders") return order.isUrgent === true;
-      return order.status === statusFilter;
+      if (statusFilter === "Urgent") return order.isUrgent === true && order.status !== "Completed";
+      if (statusFilter === "Normal") return !order.isUrgent && order.status !== "Completed";
+      if (statusFilter === "Completed") return order.status === "Completed";
+      return true;
     })
     .sort((a, b) => {
-      // Urgent orders always on top
-      if (a.isUrgent && !b.isUrgent) return -1;
-      if (!a.isUrgent && b.isUrgent) return 1;
-      // Then newest date first
+      // "On all orders the order will be urgent, normal orders and completed"
+      const rankA = getOrderRank(a);
+      const rankB = getOrderRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      // Within each rank, newest order first
       return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
     });
 
@@ -119,8 +156,6 @@ const Orders = ({ url }) => {
     if (!items || items.length === 0) return 0;
     return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   };
-
-  const urgentOrdersCount = orders.filter((o) => o.isUrgent).length;
 
   return (
     <div className="orders-page fade-in">
@@ -143,19 +178,15 @@ const Orders = ({ url }) => {
 
       {/* Filter Tabs */}
       <div className="orders-filter-bar aura-card">
-        {["All", "⚡ Urgent Orders", "Pending Verification", "Payment Verified", "Processing / Printing", "Out for Delivery", "Ready for Pickup", "Completed"].map((status) => {
-          let count = 0;
-          if (status === "All") count = orders.length;
-          else if (status === "⚡ Urgent Orders") count = urgentOrdersCount;
-          else count = orders.filter((o) => o.status === status).length;
-
+        {filterTabs.map((tab) => {
+          const count = getTabCount(tab.key);
           return (
             <button
-              key={status}
-              className={`order-filter-pill ${statusFilter === status ? "active" : ""} ${status === "⚡ Urgent Orders" ? "urgent-pill" : ""}`}
-              onClick={() => setStatusFilter(status)}
+              key={tab.key}
+              className={`order-filter-pill ${statusFilter === tab.key ? "active" : ""} ${tab.isUrgentTab ? "urgent-pill" : ""}`}
+              onClick={() => setStatusFilter(tab.key)}
             >
-              <span>{status}</span>
+              <span>{tab.label}</span>
               <span className="pill-count">{count}</span>
             </button>
           );
@@ -227,6 +258,30 @@ const Orders = ({ url }) => {
                   </div>
                 </div>
 
+                {/* Delivery Location Clickable Route Link */}
+                {order.deliveryType === "Delivery" && order.deliveryAddress ? (
+                  <div
+                    className="compact-delivery-link-row"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveRouteOrder(order);
+                    }}
+                    title="Click to view interactive delivery road route on map"
+                  >
+                    <span className="compact-map-icon">📍</span>
+                    <span className="compact-address-text text-truncate">
+                      {order.deliveryAddress}
+                    </span>
+                    <span className="compact-map-action-pill">
+                      🗺️ View Route
+                    </span>
+                  </div>
+                ) : (
+                  <div className="compact-pickup-row">
+                    <span className="compact-pickup-badge">🏬 Store Pickup</span>
+                  </div>
+                )}
+
                 {/* Bottom Row */}
                 <div className="compact-card-bottom">
                   <span className="compact-hint-text">View order details</span>
@@ -236,6 +291,16 @@ const Orders = ({ url }) => {
             );
           })}
         </div>
+      )}
+
+      {/* Pop-up Interactive Delivery Route Map Modal */}
+      {activeRouteOrder && (
+        <DeliveryRouteModal
+          order={activeRouteOrder}
+          isOpen={Boolean(activeRouteOrder)}
+          onClose={() => setActiveRouteOrder(null)}
+          url={url}
+        />
       )}
     </div>
   );

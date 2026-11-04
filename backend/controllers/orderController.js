@@ -28,6 +28,18 @@ const submitGuestOrder = async (req, res) => {
       } catch (e) {}
     }
 
+    // Auto-extract GPS coordinates if embedded in deliveryAddress (e.g. "GPS: 8.96048, 38.7106")
+    if ((!customerCoordinates?.lat || !customerCoordinates?.lng) && req.body.deliveryAddress) {
+      const match = req.body.deliveryAddress.match(/([-+]?\d{1,2}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+      if (match) {
+        const pLat = parseFloat(match[1]);
+        const pLng = parseFloat(match[2]);
+        if (!isNaN(pLat) && !isNaN(pLng)) {
+          customerCoordinates = { lat: pLat, lng: pLng };
+        }
+      }
+    }
+
     // Generate unique order number (e.g., AUR-9482)
     const randomCode = Math.floor(1000 + Math.random() * 9000);
     const orderNumber = `AUR-${new Date().getFullYear().toString().slice(-2)}${randomCode}`;
