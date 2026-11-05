@@ -465,9 +465,9 @@
 
 .btn-gps-detect {
   padding: 0 1.1rem;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
+  background: #2563eb;
+  border: 1px solid #1d4ed8;
+  color: #ffffff !important;
   font-size: 0.82rem;
   font-weight: 700;
   border-radius: var(--radius-md);

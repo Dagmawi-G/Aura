@@ -213,7 +213,6 @@ const Orders = ({ url }) => {
       ) : (
         <div className="orders-list">
           {filteredOrders.map((order) => {
-            const totalMugs = getTotalMugs(order.items);
             const countdown = getDeliveryCountdown(order.deliveryDate, order.isUrgent);
             const isCompleted = order.status === "Completed";
             const isCancelled = order.status === "Cancelled";
@@ -274,43 +273,6 @@ const Orders = ({ url }) => {
                       </span>
                     )}
                   </div>
-
-                  <div className="compact-info-box mugs-box">
-                    <span className="compact-label">Amount of Mugs</span>
-                    <span className="compact-value mugs-text">
-                      ☕ {totalMugs} {totalMugs === 1 ? "Mug" : "Mugs"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Delivery Location Clickable Route Link */}
-                {order.deliveryType === "Delivery" && order.deliveryAddress ? (
-                  <div
-                    className="compact-delivery-link-row"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveRouteOrder(order);
-                    }}
-                    title="Click to view interactive delivery road route on map"
-                  >
-                    <span className="compact-map-icon">📍</span>
-                    <span className="compact-address-text text-truncate">
-                      {order.deliveryAddress}
-                    </span>
-                    <span className="compact-map-action-pill">
-                      🗺️ View Route
-                    </span>
-                  </div>
-                ) : (
-                  <div className="compact-pickup-row">
-                    <span className="compact-pickup-badge">🏬 Store Pickup</span>
-                  </div>
-                )}
-
-                {/* Bottom Row */}
-                <div className="compact-card-bottom">
-                  <span className="compact-hint-text">View order details</span>
-                  <span className="compact-arrow">→</span>
                 </div>
               </div>
             );

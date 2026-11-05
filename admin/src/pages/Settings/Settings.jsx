@@ -388,9 +388,6 @@ const Settings = ({ url }) => {
             <div className="header-icon-badge">📍</div>
             <div>
               <h2 className="card-section-title">Store Location & Delivery Fees</h2>
-              <p className="card-section-desc">
-                Set store coordinates for distance calculation and configure the tiered delivery fees
-              </p>
             </div>
           </div>
 
@@ -422,12 +419,9 @@ const Settings = ({ url }) => {
             <div className="store-map-wrapper">
               <div className="store-map-header">
                 <div>
-                  <label className="form-label" style={{ marginBottom: "2px" }}>
+                  <label className="form-label" style={{ marginBottom: "0" }}>
                     📍 Pin Store Location on Map
                   </label>
-                  <p className="store-map-sub">
-                    Tap anywhere on the map or drag the pin to set your store location. Delivery fees are computed from this pin.
-                  </p>
                 </div>
                 <button
                   type="button"

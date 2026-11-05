@@ -189,22 +189,6 @@ const Stickers = ({ url }) => {
               </small>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select
-                className="form-input"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="General">General</option>
-                <option value="Luxury">Luxury</option>
-                <option value="Street">Street</option>
-                <option value="Aesthetic">Aesthetic</option>
-                <option value="Icons">Icons</option>
-                <option value="Nature">Nature</option>
-              </select>
-            </div>
-
             <button type="submit" className="btn-primary btn-block" disabled={uploading}>
               {uploading ? "Uploading Graphic..." : "Add to Library"}
             </button>
@@ -296,7 +280,6 @@ const Stickers = ({ url }) => {
                       </div>
                       <div className="gallery-sticker-meta">
                         <strong className="gallery-sticker-name">{st.name}</strong>
-                        <span className="gallery-sticker-cat">{st.category || "General"}</span>
                       </div>
                       <button
                         type="button"
