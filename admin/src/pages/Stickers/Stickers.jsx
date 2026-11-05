@@ -148,7 +148,7 @@ const Stickers = ({ url }) => {
     reader.onerror = () => {
       try {
         setEditPreview(URL.createObjectURL(selected));
-      } catch (err) {}
+      } catch (err) { }
     };
     reader.readAsDataURL(selected);
   };
@@ -306,14 +306,14 @@ const Stickers = ({ url }) => {
           <div className="card-header-row justify-between" style={{ flexWrap: "wrap", gap: "10px" }}>
             <div>
               <h2 className="card-section-title">Active Library ({stickers.length})</h2>
-              <p className="card-section-desc">Classified into Mix and Fixed with live stock tracking</p>
+              <p className="card-section-desc">Classified into Mix and Fixed • Click any sticker to edit details or stock</p>
             </div>
 
             {/* Classification Filter Tabs */}
             <div className="sticker-type-filters" style={{ display: "flex", gap: "6px" }}>
               {["All", "Mix", "Fixed"].map((type) => {
-                const count = type === "All" 
-                  ? stickers.length 
+                const count = type === "All"
+                  ? stickers.length
                   : stickers.filter((s) => (s.stickerType || "Mix") === type).length;
                 return (
                   <button
@@ -362,195 +362,197 @@ const Stickers = ({ url }) => {
                   const isOut = stock <= 0;
 
                   return (
-                    <div key={st._id} className={`gallery-sticker-item ${isOut ? "item-out-of-stock" : ""}`}>
-                      <div className="gallery-sticker-media">
-                        <img
-                          src={`${url}/images/${st.image}`}
-                          alt={st.name}
-                          className="gallery-sticker-img"
-                        />
-                        <span 
-                          className="sticker-type-badge"
-                          style={{
-                            position: "absolute",
-                            top: "6px",
-                            left: "6px",
-                            fontSize: "0.72rem",
-                            fontWeight: "700",
-                            padding: "2px 8px",
-                            borderRadius: "10px",
-                            background: isFixed ? "#f1f5f9" : "#e0e7ff",
-                            color: isFixed ? "#334155" : "#3730a3",
-                            border: isFixed ? "1px solid #cbd5e1" : "1px solid #c7d2fe"
+                      <div
+                        key={st._id}
+                        className={`gallery-sticker-item ${isOut ? "item-out-of-stock" : ""}`}
+                        onClick={() => handleStartEdit(st)}
+                        title="Click sticker to edit details or stock"
+                      >
+                        <button
+                          type="button"
+                          className="btn-delete-sticker"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(st._id);
                           }}
-                        >
-                          {isFixed ? "📌 Fixed" : "🎨 Mix"}
-                        </span>
-                      </div>
-                      <div className="gallery-sticker-meta">
-                        <strong className="gallery-sticker-name" title={st.name}>{st.name}</strong>
-                        {isOut ? (
-                          <span className="sticker-stock-badge badge-out">🔴 OUT</span>
-                        ) : (
-                          <span className="sticker-stock-badge badge-in">📦 {stock} left</span>
-                        )}
-                      </div>
-                      <div className="gallery-sticker-actions">
-                        <button
-                          type="button"
-                          className="btn-action-sticker btn-edit-sticker"
-                          onClick={() => handleStartEdit(st)}
-                          title="Edit Sticker"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-action-sticker btn-delete-sticker"
-                          onClick={() => handleDelete(st._id)}
                           title="Delete Sticker"
+                          aria-label="Delete Sticker"
                         >
                           ✕
                         </button>
+
+                        <div className="gallery-sticker-media">
+                          <img
+                            src={`${url}/images/${st.image}`}
+                            alt={st.name}
+                            className="gallery-sticker-img"
+                          />
+                          <span
+                            className="sticker-type-badge"
+                            style={{
+                              position: "absolute",
+                              top: "6px",
+                              left: "6px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                              padding: "2px 8px",
+                              borderRadius: "10px",
+                              background: isFixed ? "#f1f5f9" : "#e0e7ff",
+                              color: isFixed ? "#334155" : "#3730a3",
+                              border: isFixed ? "1px solid #cbd5e1" : "1px solid #c7d2fe"
+                            }}
+                          >
+                            {isFixed ? "📌 Fixed" : "🎨 Mix"}
+                          </span>
+                        </div>
+                        <div className="gallery-sticker-meta">
+                          <strong className="gallery-sticker-name" title={st.name}>{st.name}</strong>
+                          {isOut ? (
+                            <span className="sticker-stock-badge badge-out">🔴 OUT</span>
+                          ) : (
+                            <span className="sticker-stock-badge badge-in">📦 {stock} left</span>
+                          )}
+                          <span className="sticker-click-hint">Click to edit</span>
+                        </div>
                       </div>
-                    </div>
-                  );
+                      );
                 })}
-            </div>
-          )}
+                    </div>
+                  )
+                }
         </div>
       </div>
 
-      {/* Edit Sticker Modal */}
-      {editingSticker && (
-        <div className="sticker-edit-modal-backdrop" onClick={handleCloseEdit}>
-          <div className="sticker-edit-modal-content aura-card" onClick={(e) => e.stopPropagation()}>
-            <div className="sticker-modal-header">
-              <div className="modal-title-wrap">
-                <span className="modal-icon-badge">✏️</span>
-                <div>
-                  <h3 className="modal-title">Edit Sticker</h3>
-                  <p className="modal-subtitle">Modify name, type, graphic, or available stock</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="sticker-modal-close"
-                onClick={handleCloseEdit}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateSticker} className="edit-sticker-form">
-              <div className="edit-image-row">
-                <div className="edit-preview-box">
-                  <img src={editPreview} alt="Sticker preview" className="edit-preview-img" />
-                </div>
-                <div className="edit-image-action-box">
-                  <label htmlFor="edit-sticker-file-input" className="btn-secondary-sm btn-change-graphic">
-                    🖼️ Change Graphic
-                  </label>
-                  <input
-                    id="edit-sticker-file-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditFileSelect}
-                    style={{ display: "none" }}
-                  />
-                  <small className="form-field-hint">Optional. Leave untouched to keep the current graphic.</small>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Sticker Name <span className="label-req">*</span></label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="e.g. Aura Crown"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Classification / Type <span className="label-req">*</span></label>
-                <select
-                  className="form-input"
-                  value={editStickerType}
-                  onChange={(e) => setEditStickerType(e.target.value)}
-                >
-                  <option value="Mix">🎨 A. Mix (Customer chooses based on theme)</option>
-                  <option value="Fixed">📌 B. Fixed (Fixed placement / Standard)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Available Stock Quantity <span className="label-req">*</span></label>
-                <div className="stock-input-wrapper">
-                  <input
-                    type="number"
-                    min="0"
-                    className="form-input"
-                    value={editStockQuantity}
-                    onChange={(e) => setEditStockQuantity(e.target.value)}
-                    required
-                  />
-                  <div className="stock-quick-actions">
-                    <button
-                      type="button"
-                      className="btn-stock-pill mark-out"
-                      onClick={() => setEditStockQuantity("0")}
-                      title="Set stock to 0 (Mark OUT)"
-                    >
-                      Set to 0 (OUT)
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-stock-pill"
-                      onClick={() => setEditStockQuantity("50")}
-                    >
-                      50
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-stock-pill"
-                      onClick={() => setEditStockQuantity("100")}
-                    >
-                      100
-                    </button>
+        {/* Edit Sticker Modal */}
+        {editingSticker && (
+          <div className="sticker-edit-modal-backdrop" onClick={handleCloseEdit}>
+            <div className="sticker-edit-modal-content aura-card" onClick={(e) => e.stopPropagation()}>
+              <div className="sticker-modal-header">
+                <div className="modal-title-wrap">
+                  <span className="modal-icon-badge">✏️</span>
+                  <div>
+                    <h3 className="modal-title">Edit Sticker</h3>
+                    <p className="modal-subtitle">Modify name, type, graphic, or available stock</p>
                   </div>
                 </div>
-                <small className="form-field-hint" style={{ color: "#64748b", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
-                  When stock reaches 0, the customer app flags this sticker as <strong>OUT</strong> and prevents selection.
-                </small>
-              </div>
-
-              <div className="sticker-modal-actions">
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="sticker-modal-close"
                   onClick={handleCloseEdit}
-                  disabled={savingEdit}
+                  aria-label="Close"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={savingEdit}
-                >
-                  {savingEdit ? "Saving..." : "Save Changes"}
+                  ✕
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleUpdateSticker} className="edit-sticker-form">
+                <div className="edit-image-row">
+                  <div className="edit-preview-box">
+                    <img src={editPreview} alt="Sticker preview" className="edit-preview-img" />
+                  </div>
+                  <div className="edit-image-action-box">
+                    <label htmlFor="edit-sticker-file-input" className="btn-secondary-sm btn-change-graphic">
+                      🖼️ Change Graphic
+                    </label>
+                    <input
+                      id="edit-sticker-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditFileSelect}
+                      style={{ display: "none" }}
+                    />
+                    <small className="form-field-hint">Optional. Leave untouched to keep the current graphic.</small>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Sticker Name <span className="label-req">*</span></label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="e.g. Aura Crown"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Classification / Type <span className="label-req">*</span></label>
+                  <select
+                    className="form-input"
+                    value={editStickerType}
+                    onChange={(e) => setEditStickerType(e.target.value)}
+                  >
+                    <option value="Mix">🎨 A. Mix (Customer chooses based on theme)</option>
+                    <option value="Fixed">📌 B. Fixed (Fixed placement / Standard)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Available Stock Quantity <span className="label-req">*</span></label>
+                  <div className="stock-input-wrapper">
+                    <input
+                      type="number"
+                      min="0"
+                      className="form-input"
+                      value={editStockQuantity}
+                      onChange={(e) => setEditStockQuantity(e.target.value)}
+                      required
+                    />
+                    <div className="stock-quick-actions">
+                      <button
+                        type="button"
+                        className="btn-stock-pill mark-out"
+                        onClick={() => setEditStockQuantity("0")}
+                        title="Set stock to 0 (Mark OUT)"
+                      >
+                        Set to 0 (OUT)
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-stock-pill"
+                        onClick={() => setEditStockQuantity("50")}
+                      >
+                        50
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-stock-pill"
+                        onClick={() => setEditStockQuantity("100")}
+                      >
+                        100
+                      </button>
+                    </div>
+                  </div>
+                  <small className="form-field-hint" style={{ color: "#64748b", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
+                    When stock reaches 0, the customer app flags this sticker as <strong>OUT</strong> and prevents selection.
+                  </small>
+                </div>
+
+                <div className="sticker-modal-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleCloseEdit}
+                    disabled={savingEdit}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={savingEdit}
+                  >
+                    {savingEdit ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+      );
 };
 
-export default Stickers;
+      export default Stickers;
