@@ -397,6 +397,32 @@
   box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
 }
 
+.cust-sticker-card.is-out-of-stock {
+  opacity: 0.55;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.cust-sticker-card.is-out-of-stock:hover {
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+.cust-sticker-out-flag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #dc2626;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  margin-left: auto;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .cust-sticker-img {
   width: 24px;
   height: 24px;

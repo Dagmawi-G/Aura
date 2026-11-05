@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import orderModel from "../models/orderModel.js";
+import stickerModel from "../models/stickerModel.js";
 import { notifyAdminsOfOrder, getVapidPublicKey, savePushSubscription } from "../services/pushService.js";
 
 // In-memory orders store fallback if MongoDB is offline
@@ -77,6 +78,33 @@ const submitGuestOrder = async (req, res) => {
       orderData.createdAt = new Date();
       orderData.updatedAt = new Date();
       inMemoryOrders.set(orderNumber, orderData);
+    }
+
+    // Automatically decrement sticker inventory for all used stickers
+    if (items && Array.isArray(items)) {
+      for (const itm of items) {
+        const itemQty = Math.max(1, Number(itm.quantity) || 1);
+        if (itm.selectedStickers && Array.isArray(itm.selectedStickers)) {
+          for (const st of itm.selectedStickers) {
+            try {
+              let stickerDoc = null;
+              if (st.id && mongoose.Types.ObjectId.isValid(st.id)) {
+                stickerDoc = await stickerModel.findById(st.id);
+              }
+              if (!stickerDoc && st.name) {
+                stickerDoc = await stickerModel.findOne({ name: st.name });
+              }
+              if (stickerDoc) {
+                const currentStock = typeof stickerDoc.stockQuantity === "number" ? stickerDoc.stockQuantity : 50;
+                stickerDoc.stockQuantity = Math.max(0, currentStock - itemQty);
+                await stickerDoc.save();
+              }
+            } catch (stErr) {
+              console.warn("Could not decrement stock for sticker:", st.name || st.id, stErr.message);
+            }
+          }
+        }
+      }
     }
 
     // Trigger website push notification to admin phone & devices

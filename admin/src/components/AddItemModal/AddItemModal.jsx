@@ -141,6 +141,7 @@ const AddItemModal = ({ isOpen, onClose, url, onItemAdded, editItem = null }) =>
     try {
       const formData = new FormData();
       formData.append("name", newStickerName || "Sticker");
+      formData.append("stockQuantity", "50");
       formData.append("image", newStickerFile);
 
       const res = await axios.post(`${url}/api/sticker/add`, formData);
@@ -376,7 +377,10 @@ const AddItemModal = ({ isOpen, onClose, url, onItemAdded, editItem = null }) =>
                         alt={sticker.name}
                         className="sticker-chip-img"
                       />
-                      <span className="sticker-chip-title">{sticker.name}</span>
+                      <span className="sticker-chip-title">
+                        {sticker.name}
+                        {typeof sticker.stockQuantity === "number" && sticker.stockQuantity <= 0 ? " (OUT)" : ""}
+                      </span>
                       {isSelected && <span className="sticker-check">✓</span>}
                     </div>
                   );

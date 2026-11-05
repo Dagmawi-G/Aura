@@ -429,6 +429,12 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   };
 
   const toggleSticker = (sticker) => {
+    const isOut = typeof sticker.stockQuantity === "number" && sticker.stockQuantity <= 0;
+    if (isOut) {
+      toast.warning(`"${sticker.name}" is currently out of stock!`);
+      return;
+    }
+
     const isFixed = (sticker.stickerType || "Mix") === "Fixed" || fixedStickers.some((f) => f.name === sticker.name) || stickerTab === "Fixed";
     const isAlreadySelected = selectedStickers.some((s) => s.name === sticker.name);
 
@@ -626,11 +632,13 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                 ) : (
                   (stickerTab === "Mix" ? mixStickers : fixedStickers).map((st) => {
                     const isSelected = selectedStickers.some((s) => s.name === st.name);
+                    const isOut = typeof st.stockQuantity === "number" && st.stockQuantity <= 0;
                     return (
                       <div
                         key={st._id}
-                        className={`cust-sticker-card ${isSelected ? "selected" : ""}`}
+                        className={`cust-sticker-card ${isSelected ? "selected" : ""} ${isOut ? "is-out-of-stock" : ""}`}
                         onClick={() => toggleSticker(st)}
+                        title={isOut ? `"${st.name}" is out of stock` : st.name}
                       >
                         <img
                           src={`${url}/images/${st.image}`}
@@ -638,7 +646,11 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                           className="cust-sticker-img"
                         />
                         <span className="cust-sticker-name">{st.name}</span>
-                        {isSelected && <span className="cust-sticker-badge">✓</span>}
+                        {isOut ? (
+                          <span className="cust-sticker-out-flag">OUT</span>
+                        ) : isSelected ? (
+                          <span className="cust-sticker-badge">✓</span>
+                        ) : null}
                       </div>
                     );
                   })

@@ -7,12 +7,22 @@ const Stickers = ({ url }) => {
   const [stickers, setStickers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("General");
+  const [category] = useState("General");
   const [stickerType, setStickerType] = useState("Mix"); // 'Mix' or 'Fixed'
+  const [stockQuantity, setStockQuantity] = useState("50");
   const [typeFilter, setTypeFilter] = useState("All");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  // Edit Sticker State
+  const [editingSticker, setEditingSticker] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editStickerType, setEditStickerType] = useState("Mix");
+  const [editStockQuantity, setEditStockQuantity] = useState("50");
+  const [editFile, setEditFile] = useState(null);
+  const [editPreview, setEditPreview] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchStickers = async () => {
     try {
@@ -77,16 +87,18 @@ const Stickers = ({ url }) => {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("name", name);
+      formData.append("name", name.trim());
       formData.append("category", category);
       formData.append("stickerType", stickerType);
+      formData.append("stockQuantity", stockQuantity !== "" ? stockQuantity : "50");
       formData.append("image", file);
 
       const res = await axios.post(`${url}/api/sticker/add`, formData);
       if (res.data.success) {
-        toast.success(`Sticker added to library as ${stickerType}!`);
+        toast.success(`Sticker added to library with ${stockQuantity} units in stock!`);
         setName("");
         setStickerType("Mix");
+        setStockQuantity("50");
         setFile(null);
         setPreview("");
         await fetchStickers();
@@ -100,12 +112,90 @@ const Stickers = ({ url }) => {
     }
   };
 
+  // Start editing a sticker
+  const handleStartEdit = (st) => {
+    setEditingSticker(st);
+    setEditName(st.name || "");
+    setEditStickerType(st.stickerType || "Mix");
+    setEditStockQuantity(st.stockQuantity !== undefined ? String(st.stockQuantity) : "50");
+    setEditFile(null);
+    setEditPreview(`${url}/images/${st.image}`);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingSticker(null);
+    setEditName("");
+    setEditStickerType("Mix");
+    setEditStockQuantity("50");
+    setEditFile(null);
+    setEditPreview("");
+  };
+
+  const handleEditFileSelect = (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
+
+    if (selected.size > 10 * 1024 * 1024) {
+      toast.error("File size exceeds 10MB");
+      return;
+    }
+
+    setEditFile(selected);
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      setEditPreview(loadEvent.target.result);
+    };
+    reader.onerror = () => {
+      try {
+        setEditPreview(URL.createObjectURL(selected));
+      } catch (err) {}
+    };
+    reader.readAsDataURL(selected);
+  };
+
+  const handleUpdateSticker = async (e) => {
+    e.preventDefault();
+    if (!editingSticker) return;
+    if (!editName.trim()) {
+      toast.error("Please enter a sticker title");
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const formData = new FormData();
+      formData.append("id", editingSticker._id);
+      formData.append("name", editName.trim());
+      formData.append("stickerType", editStickerType);
+      formData.append("stockQuantity", editStockQuantity !== "" ? editStockQuantity : "0");
+      if (editFile) {
+        formData.append("image", editFile);
+      }
+
+      const res = await axios.post(`${url}/api/sticker/update`, formData);
+      if (res.data.success) {
+        toast.success("Sticker updated successfully!");
+        handleCloseEdit();
+        await fetchStickers();
+      } else {
+        toast.error(res.data.message || "Failed to update sticker");
+      }
+    } catch (e) {
+      toast.error("Error updating sticker");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this sticker from global library?")) return;
     try {
       const res = await axios.post(`${url}/api/sticker/remove`, { id });
       if (res.data.success) {
         toast.success("Sticker removed");
+        if (editingSticker?._id === id) {
+          handleCloseEdit();
+        }
         await fetchStickers();
       } else {
         toast.error(res.data.message || "Failed to delete");
@@ -121,7 +211,7 @@ const Stickers = ({ url }) => {
         <div>
           <h1 className="page-heading">Global Sticker Gallery</h1>
           <p className="page-subheading">
-            Manage custom graphic stickers and badges available for product attachments and customer customization
+            Manage custom graphic stickers, classifications, inventory count, and availability for customer customization
           </p>
         </div>
       </div>
@@ -189,6 +279,22 @@ const Stickers = ({ url }) => {
               </small>
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Stock Quantity (In-Stock Units) <span className="label-req">*</span></label>
+              <input
+                type="number"
+                min="0"
+                className="form-input"
+                placeholder="e.g. 50"
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
+                required
+              />
+              <small className="form-field-hint" style={{ color: "#64748b", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
+                Decreases automatically with each order. Reaching 0 marks it OUT.
+              </small>
+            </div>
+
             <button type="submit" className="btn-primary btn-block" disabled={uploading}>
               {uploading ? "Uploading Graphic..." : "Add to Library"}
             </button>
@@ -200,7 +306,7 @@ const Stickers = ({ url }) => {
           <div className="card-header-row justify-between" style={{ flexWrap: "wrap", gap: "10px" }}>
             <div>
               <h2 className="card-section-title">Active Library ({stickers.length})</h2>
-              <p className="card-section-desc">Classified into Mix and Fixed for customer selection</p>
+              <p className="card-section-desc">Classified into Mix and Fixed with live stock tracking</p>
             </div>
 
             {/* Classification Filter Tabs */}
@@ -252,8 +358,11 @@ const Stickers = ({ url }) => {
                 })
                 .map((st) => {
                   const isFixed = (st.stickerType || "Mix") === "Fixed";
+                  const stock = typeof st.stockQuantity === "number" ? st.stockQuantity : 50;
+                  const isOut = stock <= 0;
+
                   return (
-                    <div key={st._id} className="gallery-sticker-item">
+                    <div key={st._id} className={`gallery-sticker-item ${isOut ? "item-out-of-stock" : ""}`}>
                       <div className="gallery-sticker-media">
                         <img
                           src={`${url}/images/${st.image}`}
@@ -279,16 +388,31 @@ const Stickers = ({ url }) => {
                         </span>
                       </div>
                       <div className="gallery-sticker-meta">
-                        <strong className="gallery-sticker-name">{st.name}</strong>
+                        <strong className="gallery-sticker-name" title={st.name}>{st.name}</strong>
+                        {isOut ? (
+                          <span className="sticker-stock-badge badge-out">🔴 OUT</span>
+                        ) : (
+                          <span className="sticker-stock-badge badge-in">📦 {stock} left</span>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        className="btn-delete-sticker"
-                        onClick={() => handleDelete(st._id)}
-                        title="Delete Sticker"
-                      >
-                        ✕
-                      </button>
+                      <div className="gallery-sticker-actions">
+                        <button
+                          type="button"
+                          className="btn-action-sticker btn-edit-sticker"
+                          onClick={() => handleStartEdit(st)}
+                          title="Edit Sticker"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-action-sticker btn-delete-sticker"
+                          onClick={() => handleDelete(st._id)}
+                          title="Delete Sticker"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -296,6 +420,135 @@ const Stickers = ({ url }) => {
           )}
         </div>
       </div>
+
+      {/* Edit Sticker Modal */}
+      {editingSticker && (
+        <div className="sticker-edit-modal-backdrop" onClick={handleCloseEdit}>
+          <div className="sticker-edit-modal-content aura-card" onClick={(e) => e.stopPropagation()}>
+            <div className="sticker-modal-header">
+              <div className="modal-title-wrap">
+                <span className="modal-icon-badge">✏️</span>
+                <div>
+                  <h3 className="modal-title">Edit Sticker</h3>
+                  <p className="modal-subtitle">Modify name, type, graphic, or available stock</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="sticker-modal-close"
+                onClick={handleCloseEdit}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSticker} className="edit-sticker-form">
+              <div className="edit-image-row">
+                <div className="edit-preview-box">
+                  <img src={editPreview} alt="Sticker preview" className="edit-preview-img" />
+                </div>
+                <div className="edit-image-action-box">
+                  <label htmlFor="edit-sticker-file-input" className="btn-secondary-sm btn-change-graphic">
+                    🖼️ Change Graphic
+                  </label>
+                  <input
+                    id="edit-sticker-file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditFileSelect}
+                    style={{ display: "none" }}
+                  />
+                  <small className="form-field-hint">Optional. Leave untouched to keep the current graphic.</small>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Sticker Name <span className="label-req">*</span></label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g. Aura Crown"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Classification / Type <span className="label-req">*</span></label>
+                <select
+                  className="form-input"
+                  value={editStickerType}
+                  onChange={(e) => setEditStickerType(e.target.value)}
+                >
+                  <option value="Mix">🎨 A. Mix (Customer chooses based on theme)</option>
+                  <option value="Fixed">📌 B. Fixed (Fixed placement / Standard)</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Available Stock Quantity <span className="label-req">*</span></label>
+                <div className="stock-input-wrapper">
+                  <input
+                    type="number"
+                    min="0"
+                    className="form-input"
+                    value={editStockQuantity}
+                    onChange={(e) => setEditStockQuantity(e.target.value)}
+                    required
+                  />
+                  <div className="stock-quick-actions">
+                    <button
+                      type="button"
+                      className="btn-stock-pill mark-out"
+                      onClick={() => setEditStockQuantity("0")}
+                      title="Set stock to 0 (Mark OUT)"
+                    >
+                      Set to 0 (OUT)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-stock-pill"
+                      onClick={() => setEditStockQuantity("50")}
+                    >
+                      50
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-stock-pill"
+                      onClick={() => setEditStockQuantity("100")}
+                    >
+                      100
+                    </button>
+                  </div>
+                </div>
+                <small className="form-field-hint" style={{ color: "#64748b", fontSize: "0.8rem", marginTop: "4px", display: "block" }}>
+                  When stock reaches 0, the customer app flags this sticker as <strong>OUT</strong> and prevents selection.
+                </small>
+              </div>
+
+              <div className="sticker-modal-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCloseEdit}
+                  disabled={savingEdit}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={savingEdit}
+                >
+                  {savingEdit ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

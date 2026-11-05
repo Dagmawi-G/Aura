@@ -8,10 +8,15 @@ const addSticker = async (req, res) => {
       return res.status(400).json({ success: false, message: "Sticker image is required" });
     }
     const imageFilename = req.file.filename;
+    const stockQuantity = req.body.stockQuantity !== undefined && req.body.stockQuantity !== ""
+      ? Math.max(0, parseInt(req.body.stockQuantity, 10) || 0)
+      : 50;
+
     const sticker = new stickerModel({
-      name: req.body.name || "Custom Sticker",
+      name: req.body.name ? req.body.name.trim() : "Custom Sticker",
       category: req.body.category || "General",
       stickerType: req.body.stickerType === "Fixed" ? "Fixed" : "Mix",
+      stockQuantity: stockQuantity,
       image: imageFilename
     });
     await sticker.save();
@@ -30,6 +35,48 @@ const listStickers = async (req, res) => {
   } catch (error) {
     console.error("Error listing stickers:", error);
     res.status(500).json({ success: false, message: "Error fetching stickers" });
+  }
+};
+
+// Update Sticker
+const updateSticker = async (req, res) => {
+  try {
+    const { id, name, category, stickerType, stockQuantity } = req.body;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Sticker ID is required for update" });
+    }
+
+    const sticker = await stickerModel.findById(id);
+    if (!sticker) {
+      return res.status(404).json({ success: false, message: "Sticker not found" });
+    }
+
+    if (name !== undefined && name.trim()) {
+      sticker.name = name.trim();
+    }
+    if (category !== undefined) {
+      sticker.category = category;
+    }
+    if (stickerType !== undefined) {
+      sticker.stickerType = stickerType === "Fixed" ? "Fixed" : "Mix";
+    }
+    if (stockQuantity !== undefined && stockQuantity !== "") {
+      sticker.stockQuantity = Math.max(0, parseInt(stockQuantity, 10) || 0);
+    }
+
+    // Optional replacement image
+    if (req.file) {
+      if (sticker.image && fs.existsSync(`uploads/${sticker.image}`)) {
+        fs.unlink(`uploads/${sticker.image}`, () => {});
+      }
+      sticker.image = req.file.filename;
+    }
+
+    await sticker.save();
+    res.json({ success: true, message: "Sticker updated successfully", data: sticker });
+  } catch (error) {
+    console.error("Error updating sticker:", error);
+    res.status(500).json({ success: false, message: "Error updating sticker: " + error.message });
   }
 };
 
@@ -52,4 +99,4 @@ const removeSticker = async (req, res) => {
   }
 };
 
-export { addSticker, listStickers, removeSticker };
+export { addSticker, listStickers, updateSticker, removeSticker };
