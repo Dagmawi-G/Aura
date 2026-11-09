@@ -207,8 +207,8 @@
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  gap: 1.5rem;
-  padding: 0.25rem 0 1.25rem;
+  gap: 1.15rem;
+  padding: 0.25rem 0.5rem 1.25rem 0.15rem;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
   width: 100%;

@@ -575,20 +575,6 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
               {product.description && (
                 <p className="product-modal-desc">{product.description}</p>
               )}
-
-              {selectedStickers.length > 0 && (
-                <div className="applied-stickers-preview">
-                  <span className="applied-label">Selected Stickers:</span>
-                  <div className="applied-chips">
-                    {selectedStickers.map((s, idx) => (
-                      <span key={idx} className="applied-chip">
-                        {s.image && <img src={`${url}/images/${s.image}`} alt="" className="chip-img" />}
-                        {s.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

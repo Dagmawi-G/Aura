@@ -3,7 +3,7 @@
   width: 100%;
   min-width: 100%;
   max-width: 100%;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
   scroll-snap-stop: always;
   box-sizing: border-box;
   border-radius: var(--radius-lg);
@@ -14,6 +14,24 @@
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: 0 4px 16px rgba(61, 35, 20, 0.08);
+}
+
+/* Subtle peek for horizontal carousel: reveals a little bit of the next card */
+.products-horizontal-track.has-peek .client-product-card {
+  flex: 0 0 calc(100% - 40px);
+  width: calc(100% - 40px);
+  min-width: calc(100% - 40px);
+  max-width: calc(100% - 40px);
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .products-horizontal-track.has-peek .client-product-card {
+    flex: 0 0 calc(100% - 64px);
+    width: calc(100% - 64px);
+    min-width: calc(100% - 64px);
+    max-width: calc(100% - 64px);
+  }
 }
 
 .client-product-card:hover {
@@ -195,29 +213,36 @@
     grid-template-columns: 1.15fr 1fr;
     min-height: 420px;
   }
+
   .product-media-wrap {
     height: 100%;
     min-height: 420px;
   }
+
   .client-product-img {
     height: 100%;
   }
+
   .product-info-wrap {
     padding: 2.25rem 2rem;
     justify-content: center;
     gap: 1.15rem;
   }
+
   .client-product-title {
     font-size: 1.6rem;
   }
+
   .client-product-price {
     font-size: 1.5rem;
   }
+
   .client-product-desc {
     font-size: 0.95rem;
     -webkit-line-clamp: 3;
     line-clamp: 3;
   }
+
   .btn-customize-trigger {
     padding: 0.85rem 1.6rem;
     font-size: 0.96rem;
@@ -231,26 +256,32 @@
     display: flex;
     flex-direction: column;
   }
+
   .product-media-wrap {
     height: 260px;
   }
+
   .product-info-wrap {
     padding: 1.15rem;
     gap: 0.75rem;
   }
+
   .client-product-title {
     font-size: 1.15rem;
     line-height: 1.3;
   }
+
   .client-product-price {
     font-size: 1.25rem;
   }
+
   .client-product-desc {
     font-size: 0.82rem;
     line-height: 1.4;
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
+
   .btn-customize-trigger {
     padding: 0.75rem 1.25rem;
     font-size: 0.9rem;
