@@ -81,10 +81,9 @@ const FoodDisplay = () => {
         {/* Hero / Showcase Header */}
         <div className="collection-hero-wrap">
           <div className="collection-hero-text">
-            <span className="collection-kicker">Exquisite Custom Merch</span>
             <h1 className="collection-main-heading">Crafted for Your Unique Identity</h1>
             <p className="collection-subheading">
-              Select an item, add your custom printed lettering & stickers, and order with seamless Ethiopian bank transfer or Telebirr proof verification.
+              Select an item, add customization, and order with Ethiopian bank or Telebirr transfer.
             </p>
           </div>
 
@@ -96,7 +95,7 @@ const FoodDisplay = () => {
             </svg>
             <input
               type="text"
-              placeholder="Search custom hoodies, mugs, tees, tumblers..."
+              placeholder="Search here"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="catalog-search-input"
