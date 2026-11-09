@@ -665,11 +665,30 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Display the names of the selected stickers below the sticker list */}
-              {selectedStickers.length > 0 && (
-                <div className="selected-stickers-summary-box">
-                  <div className="selected-stickers-summary-header">
-                    <span className="summary-header-label">Selected Stickers ({selectedStickers.length}):</span>
+              {/* Note placed right below the scrollable sticker section */}
+              {stickerTab === "Mix" && (
+                <div className="mix-theme-note-card">
+                  <span className="mix-note-icon">💡</span>
+                  <div className="mix-note-text">
+                    <strong>Note:</strong> Multiple stickers allowed
+                  </div>
+                </div>
+              )}
+
+              {stickerTab === "Fixed" && (
+                <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
+                  <span className="mix-note-icon">📌</span>
+                  <div className="mix-note-text" style={{ color: "#92400e" }}>
+                    <strong>Note:</strong> Single stickers only
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Stickers field below the note — always visible */}
+              <div className="selected-stickers-summary-box">
+                <div className="selected-stickers-summary-header">
+                  <span className="summary-header-label">Selected Stickers ({selectedStickers.length})</span>
+                  {selectedStickers.length > 0 && (
                     <button
                       type="button"
                       className="btn-clear-stickers-text"
@@ -677,7 +696,10 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                     >
                       Clear All
                     </button>
-                  </div>
+                  )}
+                </div>
+
+                {selectedStickers.length > 0 ? (
                   <div className="selected-stickers-names-chips">
                     {selectedStickers.map((s, idx) => (
                       <span key={idx} className="selected-sticker-name-chip">
@@ -698,27 +720,12 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Move the note below the scrollable sticker section & selected stickers list */}
-              {stickerTab === "Mix" && (
-                <div className="mix-theme-note-card">
-                  <span className="mix-note-icon">💡</span>
-                  <div className="mix-note-text">
-                    <strong>Note:</strong> Multiple stickers allowed
-                  </div>
-                </div>
-              )}
-
-              {stickerTab === "Fixed" && (
-                <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
-                  <span className="mix-note-icon">📌</span>
-                  <div className="mix-note-text" style={{ color: "#92400e" }}>
-                    <strong>Note:</strong> Single stickers only
-                  </div>
-                </div>
-              )}
+                ) : (
+                  <p className="no-selected-stickers-hint">
+                    No stickers selected yet. Tap any sticker above to select.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* 2. Written Name (Max 7 characters, English words & numbers only) */}

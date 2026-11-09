@@ -552,6 +552,14 @@
   color: var(--danger);
 }
 
+.no-selected-stickers-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  padding: 0.2rem 0;
+}
+
 .selected-stickers-names-chips {
   display: flex;
   flex-wrap: wrap;
