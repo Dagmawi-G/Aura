@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import "./FoodDisplay.css";
 import { StoreContext } from "../../context/StoreContext";
 import FoodItem from "../FoodItem/FoodItem";
@@ -9,6 +9,8 @@ const FoodDisplay = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalProduct, setModalProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const trackRef = useRef(null);
 
   const handleOpenCustomize = (product) => {
     setModalProduct(product);
@@ -16,9 +18,52 @@ const FoodDisplay = () => {
   };
 
   const filteredList = food_list.filter((item) => {
-    return item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return (
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
   });
+
+  // Reset scroll and index when search query changes
+  useEffect(() => {
+    setActiveIndex(0);
+    if (trackRef.current) {
+      trackRef.current.scrollLeft = 0;
+    }
+  }, [searchQuery]);
+
+  // Track active collection card on horizontal scroll
+  const handleScroll = () => {
+    if (trackRef.current) {
+      const { scrollLeft, clientWidth } = trackRef.current;
+      if (clientWidth > 0) {
+        const index = Math.round(scrollLeft / clientWidth);
+        setActiveIndex(Math.min(Math.max(0, index), filteredList.length - 1));
+      }
+    }
+  };
+
+  const scrollPrev = () => {
+    if (trackRef.current) {
+      const width = trackRef.current.clientWidth;
+      trackRef.current.scrollBy({ left: -width, behavior: "smooth" });
+    }
+  };
+
+  const scrollNext = () => {
+    if (trackRef.current) {
+      const width = trackRef.current.clientWidth;
+      trackRef.current.scrollBy({ left: width, behavior: "smooth" });
+    }
+  };
+
+  const scrollToIndex = (idx) => {
+    if (trackRef.current) {
+      const width = trackRef.current.clientWidth;
+      trackRef.current.scrollTo({ left: idx * width, behavior: "smooth" });
+      setActiveIndex(idx);
+    }
+  };
 
   return (
     <section className="catalog-section" id="collection">
@@ -51,7 +96,7 @@ const FoodDisplay = () => {
         </div>
       </div>
 
-      {/* Product Grid */}
+      {/* Horizontal Collection Cards Carousel */}
       {filteredList.length === 0 ? (
         <div className="empty-collection-box aura-glass">
           <div className="empty-box-icon">🎨</div>
@@ -59,15 +104,68 @@ const FoodDisplay = () => {
           <p>No customizable products match your criteria.</p>
         </div>
       ) : (
-        <div className="products-grid">
-          {filteredList.map((product) => (
-            <FoodItem
-              key={product._id}
-              product={product}
-              currency={settings.currency}
-              onCustomize={() => handleOpenCustomize(product)}
-            />
-          ))}
+        <div className="collection-carousel-container">
+          {/* Header navigation bar with item counter and navigation arrows */}
+          {filteredList.length > 1 && (
+            <div className="collection-carousel-header">
+              <span className="collection-counter-badge">
+                <span className="counter-dot">●</span> Item {activeIndex + 1} of {filteredList.length}
+              </span>
+              <div className="collection-carousel-arrows">
+                <button
+                  type="button"
+                  className="carousel-arrow-btn"
+                  onClick={scrollPrev}
+                  disabled={activeIndex === 0}
+                  aria-label="Previous collection item"
+                  title="Previous item"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  className="carousel-arrow-btn"
+                  onClick={scrollNext}
+                  disabled={activeIndex >= filteredList.length - 1}
+                  aria-label="Next collection item"
+                  title="Next item"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Full-width scrollable track */}
+          <div
+            className="products-horizontal-track products-grid"
+            ref={trackRef}
+            onScroll={handleScroll}
+          >
+            {filteredList.map((product) => (
+              <FoodItem
+                key={product._id}
+                product={product}
+                currency={settings.currency}
+                onCustomize={() => handleOpenCustomize(product)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination dots below cards */}
+          {filteredList.length > 1 && (
+            <div className="collection-pagination-dots">
+              {filteredList.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`collection-dot ${idx === activeIndex ? "active" : ""}`}
+                  onClick={() => scrollToIndex(idx)}
+                  aria-label={`Go to item ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

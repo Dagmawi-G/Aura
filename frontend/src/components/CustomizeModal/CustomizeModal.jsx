@@ -623,56 +623,99 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                 </button>
               </div>
 
-              {/* Sticker Grid */}
-              <div className="cust-stickers-grid">
-                {(stickerTab === "Mix" ? mixStickers : fixedStickers).length === 0 ? (
-                  <p className="no-stickers-note">
-                    No {stickerTab.toLowerCase()} stickers available for this item.
-                  </p>
-                ) : (
-                  (stickerTab === "Mix" ? mixStickers : fixedStickers).map((st) => {
-                    const isSelected = selectedStickers.some((s) => s.name === st.name);
-                    const isOut = typeof st.stockQuantity === "number" && st.stockQuantity <= 0;
-                    return (
-                      <div
-                        key={st._id}
-                        className={`cust-sticker-card ${isSelected ? "selected" : ""} ${isOut ? "is-out-of-stock" : ""}`}
-                        onClick={() => toggleSticker(st)}
-                        title={isOut ? `"${st.name}" is out of stock` : st.name}
-                      >
-                        <img
-                          src={`${url}/images/${st.image}`}
-                          alt={st.name}
-                          className="cust-sticker-img"
-                        />
-                        <span className="cust-sticker-name">{st.name}</span>
-                        {isOut ? (
-                          <span className="cust-sticker-out-flag">OUT</span>
-                        ) : isSelected ? (
-                          <span className="cust-sticker-badge">✓</span>
-                        ) : null}
-                      </div>
-                    );
-                  })
-                )}
+              {/* Scrollable Sticker Section (2 per row) */}
+              <div className="cust-stickers-scroll-wrap">
+                <div className="cust-stickers-grid">
+                  {(stickerTab === "Mix" ? mixStickers : fixedStickers).length === 0 ? (
+                    <p className="no-stickers-note">
+                      No {stickerTab.toLowerCase()} stickers available for this item.
+                    </p>
+                  ) : (
+                    (stickerTab === "Mix" ? mixStickers : fixedStickers).map((st) => {
+                      const isSelected = selectedStickers.some((s) => s.name === st.name);
+                      const isOut = typeof st.stockQuantity === "number" && st.stockQuantity <= 0;
+                      return (
+                        <div
+                          key={st._id}
+                          className={`cust-sticker-card ${isSelected ? "selected" : ""} ${isOut ? "is-out-of-stock" : ""}`}
+                          onClick={() => toggleSticker(st)}
+                          title={isOut ? `"${st.name}" is out of stock` : isSelected ? `Selected: ${st.name}` : `Select ${st.name}`}
+                        >
+                          <div className="cust-sticker-img-container">
+                            <img
+                              src={`${url}/images/${st.image}`}
+                              alt={st.name}
+                              className="cust-sticker-img"
+                            />
+                            {isOut && <span className="cust-sticker-out-flag">OUT</span>}
+                            {isSelected && !isOut && (
+                              <span className="cust-sticker-check-icon">✓</span>
+                            )}
+                          </div>
+                          {/* When a sticker is selected, display its name below the sticker to indicate selection */}
+                          {isSelected && (
+                            <div className="cust-sticker-selected-label">
+                              <span className="cust-sticker-name">{st.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
-              {/* Mix Theme Guidance Note */}
-              {stickerTab === "Mix" && (
-                <div className="mix-theme-note-card">
-                  <span className="mix-note-icon">💡</span>
-                  <div className="mix-note-text">
-                    <strong>Note:</strong> Consider the theme when choosing your stickers (Multiple stickers allowed).
+              {/* Display the names of the selected stickers below the sticker list */}
+              {selectedStickers.length > 0 && (
+                <div className="selected-stickers-summary-box">
+                  <div className="selected-stickers-summary-header">
+                    <span className="summary-header-label">Selected Stickers ({selectedStickers.length}):</span>
+                    <button
+                      type="button"
+                      className="btn-clear-stickers-text"
+                      onClick={() => setSelectedStickers([])}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="selected-stickers-names-chips">
+                    {selectedStickers.map((s, idx) => (
+                      <span key={idx} className="selected-sticker-name-chip">
+                        {s.image && <img src={`${url}/images/${s.image}`} alt="" className="chip-mini-img" />}
+                        <span className="chip-name-label">{s.name}</span>
+                        <button
+                          type="button"
+                          className="chip-remove-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSticker(s);
+                          }}
+                          title={`Remove ${s.name}`}
+                          aria-label={`Remove ${s.name}`}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Fixed Single Choice Guidance Note */}
+              {/* Move the note below the scrollable sticker section & selected stickers list */}
+              {stickerTab === "Mix" && (
+                <div className="mix-theme-note-card">
+                  <span className="mix-note-icon">💡</span>
+                  <div className="mix-note-text">
+                    <strong>Note:</strong> Multiple stickers allowed
+                  </div>
+                </div>
+              )}
+
               {stickerTab === "Fixed" && (
                 <div className="mix-theme-note-card" style={{ background: "#fef3c7", borderColor: "#fde68a" }}>
                   <span className="mix-note-icon">📌</span>
                   <div className="mix-note-text" style={{ color: "#92400e" }}>
-                    <strong>Note:</strong> If you choose a Fixed sticker, you cannot add other stickers (Single sticker only).
+                    <strong>Note:</strong> Single stickers only
                   </div>
                 </div>
               )}
