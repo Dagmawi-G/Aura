@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./List.css";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -14,6 +14,15 @@ const List = ({ url }) => {
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const [savingOrder, setSavingOrder] = useState(false);
+
+  // Carousel & horizontal navigation states
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  const trackRef = useRef(null);
 
   const fetchList = async () => {
     try {
@@ -129,6 +138,75 @@ const List = ({ url }) => {
       (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
+  const updateScrollButtons = () => {
+    if (trackRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = trackRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+      updateScrollButtons();
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Reset scroll and index when search query or items change
+  useEffect(() => {
+    setActiveIndex(0);
+    if (trackRef.current) {
+      trackRef.current.scrollLeft = 0;
+    }
+    setTimeout(updateScrollButtons, 100);
+  }, [searchQuery, filteredItems.length]);
+
+  const getCardStep = () => {
+    if (!trackRef.current) return 320;
+    const card = trackRef.current.querySelector(".product-card");
+    if (!card) return trackRef.current.clientWidth;
+    const style = window.getComputedStyle(trackRef.current);
+    const gap = parseFloat(style.gap) || 18;
+    return card.clientWidth + gap;
+  };
+
+  const handleScroll = () => {
+    if (trackRef.current) {
+      const { scrollLeft } = trackRef.current;
+      const step = getCardStep();
+      if (step > 0) {
+        const index = Math.round(scrollLeft / step);
+        setActiveIndex(Math.min(Math.max(0, index), filteredItems.length - 1));
+      }
+      updateScrollButtons();
+    }
+  };
+
+  const scrollPrev = () => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollBy({ left: -step, behavior: "smooth" });
+    }
+  };
+
+  const scrollNext = () => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollBy({ left: step, behavior: "smooth" });
+    }
+  };
+
+  const scrollToIndex = (idx) => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollTo({ left: idx * step, behavior: "smooth" });
+      setActiveIndex(idx);
+    }
+  };
+
   return (
     <div className="catalog-page fade-in">
       {/* Top Banner & Header */}
@@ -188,139 +266,198 @@ const List = ({ url }) => {
           </button>
         </div>
       ) : (
-        <div className="catalog-grid">
-          {filteredItems.map((item) => {
-            const actualIndex = list.findIndex((x) => x._id === item._id);
-            const isFirst = actualIndex === 0;
-            const isLast = actualIndex === list.length - 1;
+        <div className="admin-catalog-carousel-container">
+          {/* Header navigation bar with item counter and navigation arrows */}
+          {filteredItems.length > 1 && (
+            <div className="catalog-carousel-header">
+              <span className="catalog-counter-badge">
+                <span className="counter-dot">●</span>{" "}
+                {isDesktop && filteredItems.length > 1
+                  ? `Items ${activeIndex + 1}–${Math.min(activeIndex + 2, filteredItems.length)} of ${filteredItems.length}`
+                  : `Item ${activeIndex + 1} of ${filteredItems.length}`}
+              </span>
+              <div className="catalog-carousel-arrows">
+                <button
+                  type="button"
+                  className="carousel-arrow-btn"
+                  onClick={scrollPrev}
+                  disabled={!canScrollLeft}
+                  aria-label="Previous catalog item"
+                  title="Previous item"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  className="carousel-arrow-btn"
+                  onClick={scrollNext}
+                  disabled={!canScrollRight}
+                  aria-label="Next catalog item"
+                  title="Next item"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
 
-            return (
-              <div key={item._id} className="product-card aura-card">
-                <div className="product-card-media">
-                  <span className="product-rank-badge" title={`Catalog Position #${actualIndex + 1}`}>
-                    #{actualIndex + 1} {isFirst ? "🔥 Trending #1" : ""}
-                  </span>
-                  <img
-                    src={`${url}/images/${item.image}`}
-                    alt={item.name}
-                    className="product-img"
-                    onError={(e) => {
-                      e.target.src = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60";
-                    }}
-                  />
-                </div>
+          {/* Horizontal scrollable track matching customer-facing layout */}
+          <div
+            className={`catalog-horizontal-track ${
+              filteredItems.length > (isDesktop ? 2 : 1) ? "has-peek" : "no-peek"
+            }`}
+            ref={trackRef}
+            onScroll={handleScroll}
+          >
+            {filteredItems.map((item) => {
+              const actualIndex = list.findIndex((x) => x._id === item._id);
+              const isFirst = actualIndex === 0;
+              const isLast = actualIndex === list.length - 1;
 
-                <div className="product-card-body">
-                  <div className="product-card-top">
-                    <h3 className="product-name">{item.name}</h3>
-                    <span className="product-price">
-                      {item.price} <span className="currency-unit">{currency}</span>
+              return (
+                <div key={item._id} className="product-card aura-card">
+                  <div className="product-card-media">
+                    <span className="product-rank-badge" title={`Catalog Position #${actualIndex + 1}`}>
+                      #{actualIndex + 1} {isFirst ? "🔥 Trending #1" : ""}
                     </span>
+                    <img
+                      src={`${url}/images/${item.image}`}
+                      alt={item.name}
+                      className="product-img"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60";
+                      }}
+                    />
                   </div>
 
-                  {item.description ? (
-                    <p className="product-desc">{item.description}</p>
-                  ) : (
-                    <p className="product-desc muted">No description provided</p>
-                  )}
-
-                  {item.stickers && item.stickers.length > 0 && (
-                    <div className="product-stickers-wrap">
-                      <span className="stickers-label">Stickers:</span>
-                      <div className="sticker-tags">
-                        {item.stickers.map((s, idx) => (
-                          <span key={idx} className="sticker-tag-badge">
-                            ✨ {s}
-                          </span>
-                        ))}
-                      </div>
+                  <div className="product-card-body">
+                    <div className="product-card-top">
+                      <h3 className="product-name">{item.name}</h3>
+                      <span className="product-price">
+                        {item.price} <span className="currency-unit">{currency}</span>
+                      </span>
                     </div>
-                  )}
 
-                  {/* Position / Reorder Bar */}
-                  <div className="product-reorder-bar">
-                    <span className="reorder-bar-label">Position:</span>
-                    <div className="reorder-btn-group">
-                      <button
-                        type="button"
-                        className="btn-order-arrow"
-                        disabled={isFirst || searchQuery !== ""}
-                        onClick={() => handleMoveUp(actualIndex)}
-                        title="Move Up in Catalog"
-                      >
-                        ▲ Up
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-order-arrow"
-                        disabled={isLast || searchQuery !== ""}
-                        onClick={() => handleMoveDown(actualIndex)}
-                        title="Move Down in Catalog"
-                      >
-                        ▼ Down
-                      </button>
-                      {!isFirst && searchQuery === "" && (
+                    {item.description ? (
+                      <p className="product-desc">{item.description}</p>
+                    ) : (
+                      <p className="product-desc muted">No description provided</p>
+                    )}
+
+                    {item.stickers && item.stickers.length > 0 && (
+                      <div className="product-stickers-wrap">
+                        <span className="stickers-label">Stickers:</span>
+                        <div className="sticker-tags">
+                          {item.stickers.map((s, idx) => (
+                            <span key={idx} className="sticker-tag-badge">
+                              ✨ {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Position / Reorder Bar */}
+                    <div className="product-reorder-bar">
+                      <span className="reorder-bar-label">Position:</span>
+                      <div className="reorder-btn-group">
                         <button
                           type="button"
-                          className="btn-order-top"
-                          onClick={() => handleMakeTop(actualIndex)}
-                          title="Move to #1 Trending Spot"
+                          className="btn-order-arrow"
+                          disabled={isFirst || searchQuery !== ""}
+                          onClick={() => handleMoveUp(actualIndex)}
+                          title="Move Up in Catalog"
                         >
-                          ⭐ Make #1
+                          ▲ Up
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-order-arrow"
+                          disabled={isLast || searchQuery !== ""}
+                          onClick={() => handleMoveDown(actualIndex)}
+                          title="Move Down in Catalog"
+                        >
+                          ▼ Down
+                        </button>
+                        {!isFirst && searchQuery === "" && (
+                          <button
+                            type="button"
+                            className="btn-order-top"
+                            onClick={() => handleMakeTop(actualIndex)}
+                            title="Move to #1 Trending Spot"
+                          >
+                            ⭐ Make #1
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="product-card-actions">
+                      {/* Edit button */}
+                      <button
+                        className="btn-edit-item"
+                        onClick={() => handleOpenEdit(item)}
+                        title="Edit Item"
+                      >
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        <span>Edit</span>
+                      </button>
+
+                      {/* Delete button — inline 2-step confirm */}
+                      {pendingDeleteId === item._id ? (
+                        <div className="delete-confirm-row">
+                          <span className="delete-confirm-label">Delete?</span>
+                          <button
+                            className="btn-confirm-yes"
+                            onClick={() => removeFood(item._id)}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            className="btn-confirm-no"
+                            onClick={() => setPendingDeleteId(null)}
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="btn-delete-item"
+                          onClick={() => removeFood(item._id)}
+                          title="Remove Item"
+                        >
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          <span>Remove</span>
                         </button>
                       )}
                     </div>
                   </div>
-
-                  <div className="product-card-actions">
-                    {/* Edit button */}
-                    <button
-                      className="btn-edit-item"
-                      onClick={() => handleOpenEdit(item)}
-                      title="Edit Item"
-                    >
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      <span>Edit</span>
-                    </button>
-
-                    {/* Delete button — inline 2-step confirm */}
-                    {pendingDeleteId === item._id ? (
-                      <div className="delete-confirm-row">
-                        <span className="delete-confirm-label">Delete?</span>
-                        <button
-                          className="btn-confirm-yes"
-                          onClick={() => removeFood(item._id)}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          className="btn-confirm-no"
-                          onClick={() => setPendingDeleteId(null)}
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="btn-delete-item"
-                        onClick={() => removeFood(item._id)}
-                        title="Remove Item"
-                      >
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        <span>Remove</span>
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Pagination dots below cards */}
+          {filteredItems.length > 1 && (
+            <div className="catalog-pagination-dots">
+              {filteredItems.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`catalog-dot ${idx === activeIndex ? "active" : ""}`}
+                  onClick={() => scrollToIndex(idx)}
+                  aria-label={`Go to item ${idx + 1}`}
+                  title={`Item ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -25,12 +25,30 @@
   scroll-snap-align: start;
 }
 
+.products-horizontal-track.single-item .client-product-card {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  scroll-snap-align: start;
+}
+
 @media (min-width: 768px) {
+  /* Desktop: Display two catalog cards at a time with horizontal scrolling */
   .products-horizontal-track.has-peek .client-product-card {
-    flex: 0 0 calc(100% - 64px);
-    width: calc(100% - 64px);
-    min-width: calc(100% - 64px);
-    max-width: calc(100% - 64px);
+    flex: 0 0 calc((100% - 36px) / 2);
+    width: calc((100% - 36px) / 2);
+    min-width: calc((100% - 36px) / 2);
+    max-width: calc((100% - 36px) / 2);
+    scroll-snap-align: start;
+  }
+
+  .products-horizontal-track.single-item .client-product-card {
+    flex: 0 0 calc((100% - 1.15rem) / 2);
+    width: calc((100% - 1.15rem) / 2);
+    min-width: calc((100% - 1.15rem) / 2);
+    max-width: calc((100% - 1.15rem) / 2);
+    scroll-snap-align: start;
   }
 }
 
@@ -209,48 +227,51 @@
 
 @media (min-width: 768px) {
   .client-product-card {
-    display: grid;
-    grid-template-columns: 1fr 1.05fr;
-    min-height: 300px;
-    max-height: 330px;
+    display: flex;
+    flex-direction: column;
+    min-height: 410px;
+    height: 100%;
   }
 
   .product-media-wrap {
-    height: 100%;
-    min-height: 300px;
-    max-height: 330px;
+    height: 220px;
+    min-height: 220px;
   }
 
   .client-product-img {
     height: 100%;
+    width: 100%;
+    object-fit: cover;
   }
 
   .product-info-wrap {
-    padding: 1.5rem 1.6rem;
-    justify-content: center;
-    gap: 0.85rem;
+    padding: 1.25rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.65rem;
   }
 
   .client-product-title {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
   }
 
   .client-product-price {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
   }
 
   .client-product-desc {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
 
   .btn-customize-trigger {
-    padding: 0.7rem 1.3rem;
-    font-size: 0.9rem;
-    width: fit-content;
-    min-width: 175px;
-    min-height: 42px;
+    margin-top: auto;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.92rem;
+    width: 100%;
+    min-height: 44px;
   }
 }
 

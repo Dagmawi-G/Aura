@@ -141,14 +141,14 @@
 
 @media (min-width: 1024px) {
   .collection-carousel-container {
-    max-width: 820px;
+    max-width: 1060px;
     margin: 0 auto;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .collection-carousel-container {
-    max-width: 720px;
+    max-width: 100%;
     margin: 0 auto;
   }
 }

@@ -10,6 +10,11 @@ const FoodDisplay = () => {
   const [modalProduct, setModalProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
   const trackRef = useRef(null);
 
   const handleOpenCustomize = (product) => {
@@ -24,13 +29,31 @@ const FoodDisplay = () => {
     );
   });
 
-  // Reset scroll and index when search query changes
+  const updateScrollButtons = () => {
+    if (trackRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = trackRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+      updateScrollButtons();
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Reset scroll and index when search query or list changes
   useEffect(() => {
     setActiveIndex(0);
     if (trackRef.current) {
       trackRef.current.scrollLeft = 0;
     }
-  }, [searchQuery]);
+    setTimeout(updateScrollButtons, 100);
+  }, [searchQuery, filteredList.length]);
 
   // Get scroll step (card width + gap) for smooth peek scrolling
   const getCardStep = () => {
@@ -45,36 +68,37 @@ const FoodDisplay = () => {
   // Track active collection card on horizontal scroll
   const handleScroll = () => {
     if (trackRef.current) {
-        const { scrollLeft } = trackRef.current;
-        const step = getCardStep();
-        if (step > 0) {
-          const index = Math.round(scrollLeft / step);
-          setActiveIndex(Math.min(Math.max(0, index), filteredList.length - 1));
-        }
+      const { scrollLeft } = trackRef.current;
+      const step = getCardStep();
+      if (step > 0) {
+        const index = Math.round(scrollLeft / step);
+        setActiveIndex(Math.min(Math.max(0, index), filteredList.length - 1));
       }
-    };
+      updateScrollButtons();
+    }
+  };
 
-    const scrollPrev = () => {
-      if (trackRef.current) {
-        const step = getCardStep();
-        trackRef.current.scrollBy({ left: -step, behavior: "smooth" });
-      }
-    };
+  const scrollPrev = () => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollBy({ left: -step, behavior: "smooth" });
+    }
+  };
 
-    const scrollNext = () => {
-      if (trackRef.current) {
-        const step = getCardStep();
-        trackRef.current.scrollBy({ left: step, behavior: "smooth" });
-      }
-    };
+  const scrollNext = () => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollBy({ left: step, behavior: "smooth" });
+    }
+  };
 
-    const scrollToIndex = (idx) => {
-      if (trackRef.current) {
-        const step = getCardStep();
-        trackRef.current.scrollTo({ left: idx * step, behavior: "smooth" });
-        setActiveIndex(idx);
-      }
-    };
+  const scrollToIndex = (idx) => {
+    if (trackRef.current) {
+      const step = getCardStep();
+      trackRef.current.scrollTo({ left: idx * step, behavior: "smooth" });
+      setActiveIndex(idx);
+    }
+  };
 
     return (
       <section className="catalog-section" id="collection">
@@ -119,14 +143,17 @@ const FoodDisplay = () => {
             {filteredList.length > 1 && (
               <div className="collection-carousel-header">
                 <span className="collection-counter-badge">
-                  <span className="counter-dot">●</span> Item {activeIndex + 1} of {filteredList.length}
+                  <span className="counter-dot">●</span>{" "}
+                  {isDesktop && filteredList.length > 1
+                    ? `Items ${activeIndex + 1}–${Math.min(activeIndex + 2, filteredList.length)} of ${filteredList.length}`
+                    : `Item ${activeIndex + 1} of ${filteredList.length}`}
                 </span>
                 <div className="collection-carousel-arrows">
                   <button
                     type="button"
                     className="carousel-arrow-btn"
                     onClick={scrollPrev}
-                    disabled={activeIndex === 0}
+                    disabled={!canScrollLeft}
                     aria-label="Previous collection item"
                     title="Previous item"
                   >
@@ -136,7 +163,7 @@ const FoodDisplay = () => {
                     type="button"
                     className="carousel-arrow-btn"
                     onClick={scrollNext}
-                    disabled={activeIndex >= filteredList.length - 1}
+                    disabled={!canScrollRight}
                     aria-label="Next collection item"
                     title="Next item"
                   >
@@ -148,7 +175,9 @@ const FoodDisplay = () => {
 
             {/* Horizontal scrollable track with peek on next card */}
             <div
-              className={`products-horizontal-track products-grid ${filteredList.length > 1 ? "has-peek" : "single-item"}`}
+              className={`products-horizontal-track products-grid ${
+                filteredList.length > (isDesktop ? 2 : 1) ? "has-peek" : "single-item"
+              }`}
               ref={trackRef}
               onScroll={handleScroll}
             >

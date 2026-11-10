@@ -137,16 +137,173 @@
   box-shadow: 0 2px 6px rgba(61, 35, 20, 0.15);
 }
 
-.catalog-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
+.admin-catalog-carousel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.catalog-carousel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+
+.catalog-counter-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.counter-dot {
+  color: var(--accent);
+  font-size: 0.65rem;
+}
+
+.catalog-carousel-arrows {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.carousel-arrow-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(61, 35, 20, 0.08);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.carousel-arrow-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: scale(1.06);
+}
+
+.carousel-arrow-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.catalog-horizontal-track {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 1.15rem;
+  padding: 0.25rem 0.25rem 1rem 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+  width: 100%;
+}
+
+.catalog-horizontal-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.catalog-horizontal-track::-webkit-scrollbar-track {
+  background: rgba(61, 35, 20, 0.06);
+  border-radius: 9999px;
+}
+
+.catalog-horizontal-track::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 9999px;
+}
+
+/* Mobile: Display one catalog card at a time with horizontal scrolling */
+@media (max-width: 767px) {
+  .catalog-horizontal-track.has-peek .product-card {
+    flex: 0 0 calc(100% - 40px);
+    width: calc(100% - 40px);
+    min-width: calc(100% - 40px);
+    max-width: calc(100% - 40px);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .catalog-horizontal-track.no-peek .product-card {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    scroll-snap-align: start;
+  }
+}
+
+/* Desktop: Display two catalog cards at a time with horizontal scrolling */
+@media (min-width: 768px) {
+  .catalog-horizontal-track.has-peek .product-card {
+    flex: 0 0 calc((100% - 36px) / 2);
+    width: calc((100% - 36px) / 2);
+    min-width: calc((100% - 36px) / 2);
+    max-width: calc((100% - 36px) / 2);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .catalog-horizontal-track.no-peek .product-card {
+    flex: 0 0 calc((100% - 1.15rem) / 2);
+    width: calc((100% - 1.15rem) / 2);
+    min-width: calc((100% - 1.15rem) / 2);
+    max-width: calc((100% - 1.15rem) / 2);
+    scroll-snap-align: start;
+  }
+}
+
+.catalog-pagination-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+
+.catalog-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(61, 35, 20, 0.22);
+  border: none;
+  padding: 0;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.catalog-dot.active {
+  width: 26px;
+  border-radius: 9999px;
+  background: var(--accent);
 }
 
 .product-card {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  transition: var(--transition);
 }
 
 .product-card-media {
@@ -508,21 +665,17 @@
   .category-pills {
     width: 100%;
   }
-  .catalog-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
   .product-card-body {
-    padding: 0.85rem;
+    padding: 0.95rem;
   }
   .product-name {
-    font-size: 0.92rem;
-  }
-  .product-price {
     font-size: 0.95rem;
   }
+  .product-price {
+    font-size: 1rem;
+  }
   .product-card-media {
-    height: 150px;
+    height: 180px;
   }
   .product-reorder-bar {
     flex-direction: column;
