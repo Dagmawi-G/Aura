@@ -98,6 +98,7 @@ const OrderDetail = ({ url }) => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [resolvedCoords, setResolvedCoords] = useState(null);
+  const [storeCoords, setStoreCoords] = useState({ lat: 8.9956, lng: 38.7891 });
 
   useEffect(() => {
     if (order) {
@@ -123,8 +124,16 @@ const OrderDetail = ({ url }) => {
         }
         setOrder(found);
       }
-      if (settingRes.data.success && settingRes.data.data.currency) {
-        setCurrency(settingRes.data.data.currency);
+      if (settingRes.data.success && settingRes.data.data) {
+        if (settingRes.data.data.currency) {
+          setCurrency(settingRes.data.data.currency);
+        }
+        if (settingRes.data.data.storeCoordinates?.lat && settingRes.data.data.storeCoordinates?.lng) {
+          setStoreCoords({
+            lat: Number(settingRes.data.data.storeCoordinates.lat),
+            lng: Number(settingRes.data.data.storeCoordinates.lng),
+          });
+        }
       }
     } catch (e) {
       toast.error("Failed to load order details");
@@ -173,6 +182,7 @@ const OrderDetail = ({ url }) => {
     : resolvedCoords;
 
   const yangoDirectUrl = getYangoUrl({
+    startCoords: storeCoords,
     endCoords: targetCoords,
     address: order?.deliveryAddress,
   });
@@ -180,6 +190,7 @@ const OrderDetail = ({ url }) => {
   const handleOpenYangoPin = (e) => {
     if (e) e.preventDefault();
     openYangoApp({
+      startCoords: storeCoords,
       endCoords: targetCoords,
       address: order?.deliveryAddress,
     });
