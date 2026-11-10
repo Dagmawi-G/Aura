@@ -278,15 +278,23 @@
   margin: 0 0 1.25rem;
 }
 
-.btn-google-search {
-  background: #2563eb;
+.btn-yango-search {
+  background: #ea3323;
   color: #ffffff;
   padding: 8px 18px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.85rem;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 6px rgba(234, 51, 35, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-yango-search:hover {
+  background: #cf2213;
 }
 
 /* Map Legend */
@@ -362,25 +370,25 @@
   color: #0f172a;
 }
 
-.btn-google-nav {
+.btn-yango-nav {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  background: #2563eb;
+  background: #ea3323;
   color: #ffffff;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 700;
   font-size: 0.85rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 12px rgba(234, 51, 35, 0.28);
   transition: all 0.2s ease;
 }
 
-.btn-google-nav:hover {
-  background: #1d4ed8;
+.btn-yango-nav:hover {
+  background: #cf2213;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 16px rgba(234, 51, 35, 0.38);
 }
 
 /* Responsive adjustments */
@@ -400,7 +408,7 @@
   .footer-buttons {
     flex-direction: column-reverse;
   }
-  .btn-google-nav, .btn-cancel-route {
+  .btn-yango-nav, .btn-cancel-route {
     width: 100%;
     justify-content: center;
   }

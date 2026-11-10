@@ -430,6 +430,19 @@
   color: #0f172a !important;
 }
 
+.btn-route-secondary.btn-yango-pin {
+  background: #fef2f2 !important;
+  color: #ea3323 !important;
+  border-color: #fecaca !important;
+  font-weight: 700 !important;
+}
+
+.btn-route-secondary.btn-yango-pin:hover {
+  background: #ea3323 !important;
+  color: #ffffff !important;
+  border-color: #ea3323 !important;
+}
+
 /* Map link */
 .btn-map-link {
   display: inline-flex;

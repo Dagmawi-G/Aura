@@ -122,13 +122,27 @@ const NotificationModal = ({ url }) => {
             // Play alert sound
             playAlertSound(latestNew.isUrgent);
 
-            // Also trigger local browser notification if permitted
-            if ("Notification" in window && Notification.permission === "granted") {
+            // Trigger local browser notification only as fallback if Web Push is NOT active on this device
+            // (When subscribed to Web Push, backend pushService already delivers the push notification, preventing duplicate alerts)
+            let isSubscribedToPush = false;
+            try {
+              if ("serviceWorker" in navigator) {
+                const reg = await navigator.serviceWorker.getRegistration();
+                if (reg && reg.pushManager) {
+                  const sub = await reg.pushManager.getSubscription();
+                  isSubscribedToPush = Boolean(sub);
+                }
+              }
+            } catch (subErr) {
+              isSubscribedToPush = false;
+            }
+
+            if (!isSubscribedToPush && "Notification" in window && Notification.permission === "granted") {
               const isUrgent = latestNew.isUrgent;
-              const title = isUrgent ? "New Urgent Order" : "New Order";
+              const title = isUrgent ? "⚡ New Urgent Order" : "📦 New Order";
               const body = isUrgent
-                ? `⚡ Urgent Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB).`
-                : `Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB).`;
+                ? `⚡ Urgent Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB) - Same-Day Express!`
+                : `📦 Order #${latestNew.orderNumber} from ${latestNew.customerName} (${latestNew.totalAmount} ETB).`;
 
               const notifIcon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";
 
@@ -139,12 +153,18 @@ const NotificationModal = ({ url }) => {
                       body,
                       icon: notifIcon,
                       badge: notifIcon,
+                      tag: `order-${latestNew.orderNumber}`,
+                      renotify: true,
                       vibrate: isUrgent ? [300, 100, 300, 100, 400] : [200, 100, 200],
                       data: { url: `/#/orders/${latestNew._id}` }
                     });
                   });
                 } else {
-                  const notif = new Notification(title, { body, icon: notifIcon });
+                  const notif = new Notification(title, {
+                    body,
+                    icon: notifIcon,
+                    tag: `order-${latestNew.orderNumber}`
+                  });
                   notif.onclick = () => {
                     window.focus();
                     window.location.hash = `#/orders/${latestNew._id}`;

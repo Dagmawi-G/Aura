@@ -146,9 +146,9 @@ const OrderDetail = ({ url }) => {
     }
   };
 
-  const getMapUrl = (lat, lng) => {
+  const getYangoUrl = (lat, lng) => {
     if (!lat || !lng || (lat === 0 && lng === 0)) return null;
-    return `https://www.google.com/maps?q=${lat},${lng}`;
+    return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
   };
 
   if (loading) {
@@ -162,8 +162,8 @@ const OrderDetail = ({ url }) => {
 
   if (!order) return null;
 
-  const mapUrl = order.customerCoordinates
-    ? getMapUrl(order.customerCoordinates.lat, order.customerCoordinates.lng)
+  const yangoUrl = order.customerCoordinates
+    ? getYangoUrl(order.customerCoordinates.lat, order.customerCoordinates.lng)
     : null;
 
   const totalMugs = (order.items || []).reduce((s, i) => s + (i.quantity || 0), 0);
@@ -331,18 +331,18 @@ const OrderDetail = ({ url }) => {
                     </svg>
                     <span>Pop up Delivery Route Map</span>
                   </button>
-                  {mapUrl && (
+                  {yangoUrl && (
                     <a
-                      href={mapUrl}
+                      href={yangoUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn-map-link btn-route-secondary"
+                      className="btn-map-link btn-route-secondary btn-yango-pin"
+                      title="Open drop-off location in Yango navigation"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
+                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
                       </svg>
-                      Google Maps Pin
+                      Yango Navigation Pin
                     </a>
                   )}
                 </div>

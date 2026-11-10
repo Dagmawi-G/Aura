@@ -49,9 +49,9 @@ export const notifyAdminsOfOrder = async (order) => {
   if (!order) return;
 
   const isUrgent = Boolean(order.isUrgent);
-  const title = isUrgent ? "New Urgent Order" : "New Order";
+  const title = isUrgent ? "⚡ New Urgent Order" : "📦 New Order";
   const body = isUrgent
-    ? `🚨 Order #${order.orderNumber} from ${order.customerName} (${order.totalAmount} ETB) - Same-Day Express!`
+    ? `⚡ Urgent Order #${order.orderNumber} from ${order.customerName} (${order.totalAmount} ETB) - Same-Day Express!`
     : `📦 Order #${order.orderNumber} from ${order.customerName} (${order.totalAmount} ETB).`;
 
   const notifIcon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";

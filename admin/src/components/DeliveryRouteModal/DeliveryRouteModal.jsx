@@ -209,10 +209,10 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
 
   if (!isOpen || !order) return null;
 
-  // Google Maps turn-by-turn driving URL
-  const googleMapsNavUrl = resolvedCoords
-    ? `https://www.google.com/maps/dir/?api=1&origin=${storeCoords.lat},${storeCoords.lng}&destination=${resolvedCoords.lat},${resolvedCoords.lng}&travelmode=driving`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.deliveryAddress || "Addis Ababa")}`;
+  // Yango turn-by-turn driving & delivery navigation URL
+  const yangoNavUrl = resolvedCoords
+    ? `https://yango.go.link/route?start-lat=${storeCoords.lat}&start-lon=${storeCoords.lng}&end-lat=${resolvedCoords.lat}&end-lon=${resolvedCoords.lng}`
+    : `https://yango.com/en_int/order/`;
 
   return ReactDOM.createPortal(
     <div className="route-modal-backdrop" onClick={onClose}>
@@ -288,12 +288,12 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
               <h4>Coordinates could not be pinpointed automatically</h4>
               <p>The address "{order.deliveryAddress}" could not be mapped to exact GPS coordinates.</p>
               <a
-                href={googleMapsNavUrl}
+                href={yangoNavUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-google-search"
+                className="btn-yango-search"
               >
-                🔍 Search on Google Maps directly
+                🔍 Open in Yango
               </a>
             </div>
           )}
@@ -320,22 +320,23 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
         {/* Modal Action Footer */}
         <div className="route-modal-footer">
           <div className="footer-notes">
-            <span>💡 <strong>Tip for driver:</strong> Click navigation button to open GPS turn-by-turn navigation in Google Maps.</span>
+            <span>💡 <strong>Tip for driver:</strong> Click navigation button to open GPS turn-by-turn navigation in Yango.</span>
           </div>
           <div className="footer-buttons">
             <button type="button" className="btn-cancel-route" onClick={onClose}>
               Close Map
             </button>
             <a
-              href={googleMapsNavUrl}
+              href={yangoNavUrl}
               target="_blank"
               rel="noreferrer"
-              className="btn-google-nav"
+              className="btn-yango-nav"
+              title="Launch GPS turn-by-turn navigation in Yango"
             >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="3 11 22 2 13 21 11 13 3 11" />
               </svg>
-              <span>Open in Google Maps Navigation</span>
+              <span>Open in Yango Navigation</span>
             </a>
           </div>
         </div>

@@ -19,8 +19,8 @@ self.addEventListener("push", (event) => {
   }
 
   const isUrgent = Boolean(data.data?.isUrgent || data.title?.toLowerCase().includes("urgent"));
-  const title = data.title || (isUrgent ? "New Urgent Order" : "New Order");
-  const body = data.body || "A new customer order has arrived on Aura Collection.";
+  const title = data.title || (isUrgent ? "⚡ New Urgent Order" : "📦 New Order");
+  const body = data.body || (isUrgent ? "⚡ Urgent Order has arrived on Aura Collection." : "A new customer order has arrived on Aura Collection.");
 
   // Icons for normal vs urgent orders
   const icon = isUrgent ? "/order-urgent-icon.png" : "/order-normal-icon.png";
@@ -30,7 +30,7 @@ self.addEventListener("push", (event) => {
     icon: data.icon || icon,
     badge: icon,
     vibrate: isUrgent ? [300, 100, 300, 100, 400] : [200, 100, 200],
-    tag: data.data?.orderNumber || "aura-order-notif",
+    tag: data.data?.orderNumber ? `order-${data.data.orderNumber}` : "aura-order-notif",
     renotify: true,
     requireInteraction: isUrgent, // Keep on screen on phone until dismissed if urgent
     data: data.data || {}
