@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import "./AddItemModal.css";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { getImageUrl } from "../../assets/assets";
 
 /**
  * AddItemModal — dual-mode: Add new item OR Edit existing item.
@@ -88,7 +89,7 @@ const AddItemModal = ({ isOpen, onClose, url, onItemAdded, editItem = null }) =>
 
   // Existing image URL (Edit mode, no new file selected)
   const existingImageUrl = isEditMode && editItem?.image
-    ? `${url}/images/${editItem.image}`
+    ? getImageUrl(editItem.image, url)
     : null;
 
   const displayPreview = imagePreview || existingImageUrl;
@@ -373,7 +374,7 @@ const AddItemModal = ({ isOpen, onClose, url, onItemAdded, editItem = null }) =>
                       onClick={() => toggleSticker(sticker.name)}
                     >
                       <img
-                        src={`${url}/images/${sticker.image}`}
+                        src={getImageUrl(sticker.image, url)}
                         alt={sticker.name}
                         className="sticker-chip-img"
                       />

@@ -7,6 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import DeliveryRouteModal from "../../components/DeliveryRouteModal/DeliveryRouteModal";
 import { resolveOrderCoordinates } from "../../utils/geocoding";
 import { getYangoUrl, openYangoApp } from "../../utils/yango";
+import { getImageUrl } from "../../assets/assets";
 
 export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
   if (!deliveryDate) {
@@ -429,15 +430,15 @@ const OrderDetail = ({ url }) => {
             {order.paymentProof ? (
               <div className="proof-thumbnail-wrap">
                 <img
-                  src={`${url}/images/${order.paymentProof}`}
+                  src={getImageUrl(order.paymentProof, url)}
                   alt="Transfer Proof Screenshot"
                   className="proof-thumbnail"
-                  onClick={() => setSelectedProofImg(`${url}/images/${order.paymentProof}`)}
+                  onClick={() => setSelectedProofImg(getImageUrl(order.paymentProof, url))}
                 />
                 <button
                   type="button"
                   className="btn-view-proof"
-                  onClick={() => setSelectedProofImg(`${url}/images/${order.paymentProof}`)}
+                  onClick={() => setSelectedProofImg(getImageUrl(order.paymentProof, url))}
                 >
                   🔍 View Full Screenshot & Compare ({order.prepaymentAmount || 0} {currency})
                 </button>
@@ -519,7 +520,7 @@ const OrderDetail = ({ url }) => {
                           <span key={sidx} className="sticker-preview-chip">
                             {st.image && (
                               <img
-                                src={`${url}/images/${st.image}`}
+                                src={getImageUrl(st.image, url)}
                                 alt={st.name}
                                 className="chip-sticker-icon"
                               />

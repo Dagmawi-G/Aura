@@ -1,5 +1,6 @@
 import foodModel from "../models/foodModel.js";
 import fs from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary.js";
 
 // Add Food / Product Item
 const addFood = async (req, res) => {
@@ -17,12 +18,14 @@ const addFood = async (req, res) => {
       }
     }
 
+    const uploadedImage = await uploadToCloudinary(req.file.path, "aura/items");
+
     const food = new foodModel({
       name: req.body.name,
       description: req.body.description || "",
       price: Number(req.body.price),
       category: req.body.category || "General",
-      image: req.file.filename,
+      image: uploadedImage || req.file.filename,
       stickers: stickers
     });
 
@@ -53,13 +56,11 @@ const updateFood = async (req, res) => {
       }
     }
 
-    // If a new image was uploaded, delete the old one
+    // If a new image was uploaded, upload to Cloudinary and clean up old image
     if (req.file) {
-      const oldPath = `uploads/${food.image}`;
-      if (fs.existsSync(oldPath)) {
-        fs.unlink(oldPath, () => {});
-      }
-      food.image = req.file.filename;
+      const uploadedImage = await uploadToCloudinary(req.file.path, "aura/items");
+      await deleteFromCloudinary(food.image);
+      food.image = uploadedImage || req.file.filename;
     }
 
     food.name        = name        || food.name;
@@ -125,9 +126,7 @@ const removeFood = async (req, res) => {
     if (!food) {
       return res.status(404).json({ success: false, message: "Item not found" });
     }
-    if (fs.existsSync(`uploads/${food.image}`)) {
-      fs.unlink(`uploads/${food.image}`, () => {});
-    }
+    await deleteFromCloudinary(food.image);
     await foodModel.findByIdAndDelete(foodId);
     res.json({ success: true, message: "Item removed successfully" });
   } catch (error) {

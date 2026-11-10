@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import orderModel from "../models/orderModel.js";
 import stickerModel from "../models/stickerModel.js";
 import { notifyAdminsOfOrder, getVapidPublicKey, savePushSubscription } from "../services/pushService.js";
+import { uploadToCloudinary } from "../config/cloudinary.js";
 
 // In-memory orders store fallback if MongoDB is offline
 const inMemoryOrders = new Map();
@@ -9,7 +10,9 @@ const inMemoryOrders = new Map();
 // Guest Order Submission with Payment Proof
 const submitGuestOrder = async (req, res) => {
   try {
-    const paymentProofFilename = req.file ? req.file.filename : "";
+    const paymentProofFilename = req.file
+      ? (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename
+      : "";
 
     let items = [];
     if (req.body.items) {

@@ -1,5 +1,6 @@
 import stickerModel from "../models/stickerModel.js";
 import fs from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary.js";
 
 // Add Sticker
 const addSticker = async (req, res) => {
@@ -7,7 +8,7 @@ const addSticker = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Sticker image is required" });
     }
-    const imageFilename = req.file.filename;
+    const uploadedImage = await uploadToCloudinary(req.file.path, "aura/stickers");
     const stockQuantity = req.body.stockQuantity !== undefined && req.body.stockQuantity !== ""
       ? Math.max(0, parseInt(req.body.stockQuantity, 10) || 0)
       : 50;
@@ -17,7 +18,7 @@ const addSticker = async (req, res) => {
       category: req.body.category || "General",
       stickerType: req.body.stickerType === "Fixed" ? "Fixed" : "Mix",
       stockQuantity: stockQuantity,
-      image: imageFilename
+      image: uploadedImage || req.file.filename
     });
     await sticker.save();
     res.json({ success: true, message: "Sticker added successfully", data: sticker });
@@ -66,10 +67,9 @@ const updateSticker = async (req, res) => {
 
     // Optional replacement image
     if (req.file) {
-      if (sticker.image && fs.existsSync(`uploads/${sticker.image}`)) {
-        fs.unlink(`uploads/${sticker.image}`, () => {});
-      }
-      sticker.image = req.file.filename;
+      const uploadedImage = await uploadToCloudinary(req.file.path, "aura/stickers");
+      await deleteFromCloudinary(sticker.image);
+      sticker.image = uploadedImage || req.file.filename;
     }
 
     await sticker.save();
@@ -88,9 +88,7 @@ const removeSticker = async (req, res) => {
     if (!sticker) {
       return res.status(404).json({ success: false, message: "Sticker not found" });
     }
-    if (fs.existsSync(`uploads/${sticker.image}`)) {
-      fs.unlink(`uploads/${sticker.image}`, () => {});
-    }
+    await deleteFromCloudinary(sticker.image);
     await stickerModel.findByIdAndDelete(stickerId);
     res.json({ success: true, message: "Sticker removed successfully" });
   } catch (error) {

@@ -15,3 +15,12 @@ export const assets ={
 }
 
 export const url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'
+
+export const getImageUrl = (image, baseUrl = url) => {
+  if (!image) return "";
+  if (typeof image === "string" && (image.startsWith("http://") || image.startsWith("https://"))) {
+    return image;
+  }
+  return `${baseUrl}/images/${image}`;
+};
+

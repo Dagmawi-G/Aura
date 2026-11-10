@@ -80,6 +80,15 @@ export async function getRouteDetails(storeLat, storeLng, destLat, destLng) {
   };
 }
 
+// Helper to format image URL (supports Cloudinary absolute URLs and local relative files)
+export function getImageUrl(image, baseUrl) {
+  if (!image) return "";
+  if (typeof image === "string" && (image.startsWith("http://") || image.startsWith("https://"))) {
+    return image;
+  }
+  return `${baseUrl}/images/${image}`;
+}
+
 const StoreContextProvider = (props) => {
   const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
   const [food_list, setFoodList] = useState([]);
@@ -362,6 +371,7 @@ const StoreContextProvider = (props) => {
     calculateDistanceToStore,
     calculateRouteToStore,
     getRouteDetails,
+    getImageUrl,
     computeDeliveryFee,
     computePrepayment,
     fetchFoodList,

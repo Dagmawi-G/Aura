@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./Stickers.css";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { getImageUrl } from "../../assets/assets";
 
 const Stickers = ({ url }) => {
   const [stickers, setStickers] = useState([]);
@@ -119,7 +120,7 @@ const Stickers = ({ url }) => {
     setEditStickerType(st.stickerType || "Mix");
     setEditStockQuantity(st.stockQuantity !== undefined ? String(st.stockQuantity) : "50");
     setEditFile(null);
-    setEditPreview(`${url}/images/${st.image}`);
+    setEditPreview(getImageUrl(st.image, url));
   };
 
   const handleCloseEdit = () => {
@@ -383,7 +384,7 @@ const Stickers = ({ url }) => {
 
                         <div className="gallery-sticker-media">
                           <img
-                            src={`${url}/images/${st.image}`}
+                            src={getImageUrl(st.image, url)}
                             alt={st.name}
                             className="gallery-sticker-img"
                           />

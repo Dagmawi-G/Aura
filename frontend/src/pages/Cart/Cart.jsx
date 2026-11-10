@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import "./Cart.css";
-import { StoreContext } from "../../context/StoreContext";
+import { StoreContext, getImageUrl } from "../../context/StoreContext";
 import { useNavigate, Link } from "react-router-dom";
 
 const Cart = () => {
@@ -132,7 +132,7 @@ const Cart = () => {
             >
               <div className="cart-item-media">
                 <img
-                  src={`${url}/images/${item.image}`}
+                  src={getImageUrl(item.image, url)}
                   alt={item.name}
                   className="cart-item-img"
                 />

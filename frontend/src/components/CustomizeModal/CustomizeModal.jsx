@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import "./CustomizeModal.css";
-import { StoreContext } from "../../context/StoreContext";
+import { StoreContext, getImageUrl } from "../../context/StoreContext";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
@@ -556,7 +556,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
           <div className="live-preview-box">
             <div className="preview-image-container">
               <img
-                src={`${url}/images/${product.image}`}
+                src={getImageUrl(product.image, url)}
                 alt={product.name}
                 className="preview-base-img"
               />
@@ -636,7 +636,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                         >
                           <div className="cust-sticker-img-container">
                             <img
-                              src={`${url}/images/${st.image}`}
+                              src={getImageUrl(st.image, url)}
                               alt={st.name}
                               className="cust-sticker-img"
                             />
@@ -696,7 +696,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                   <div className="selected-stickers-names-chips">
                     {selectedStickers.map((s, idx) => (
                       <span key={idx} className="selected-sticker-name-chip">
-                        {s.image && <img src={`${url}/images/${s.image}`} alt="" className="chip-mini-img" />}
+                        {s.image && <img src={getImageUrl(s.image, url)} alt="" className="chip-mini-img" />}
                         <span className="chip-name-label">{s.name}</span>
                         <button
                           type="button"

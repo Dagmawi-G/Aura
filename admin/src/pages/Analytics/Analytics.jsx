@@ -3,6 +3,7 @@ import "./Analytics.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { getImageUrl } from "../../assets/assets";
 
 const Analytics = ({ url }) => {
   const navigate = useNavigate();
@@ -454,7 +455,7 @@ const Analytics = ({ url }) => {
                       <div key={idx} className="top-product-row">
                         <div className="rank-badge">#{idx + 1}</div>
                         {prod.image ? (
-                          <img src={`${url}/images/${prod.image}`} alt={prod.name} className="prod-thumb" />
+                          <img src={getImageUrl(prod.image, url)} alt={prod.name} className="prod-thumb" />
                         ) : (
                           <div className="prod-thumb-placeholder">☕</div>
                         )}
@@ -487,7 +488,7 @@ const Analytics = ({ url }) => {
                     <div key={idx} className="sticker-rank-card">
                       <div className="sticker-rank-num">#{idx + 1}</div>
                       {st.image ? (
-                        <img src={`${url}/images/${st.image}`} alt={st.name} className="sticker-thumb" />
+                        <img src={getImageUrl(st.image, url)} alt={st.name} className="sticker-thumb" />
                       ) : (
                         <span className="sticker-thumb-emoji">🎨</span>
                       )}

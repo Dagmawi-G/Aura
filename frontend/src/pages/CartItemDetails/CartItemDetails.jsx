@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { StoreContext } from "../../context/StoreContext";
+import { StoreContext, getImageUrl } from "../../context/StoreContext";
 import { toast } from "react-toastify";
 import "./CartItemDetails.css";
 
@@ -184,7 +184,7 @@ const CartItemDetails = () => {
           <div className="preview-sticky-card aura-glass">
             <div className="preview-media-box">
               <img
-                src={`${url}/images/${item.image}`}
+                src={getImageUrl(item.image, url)}
                 alt={item.name}
                 className="preview-product-img"
               />
@@ -318,7 +318,7 @@ const CartItemDetails = () => {
                       >
                         <div className="details-sticker-media">
                           <img
-                            src={`${url}/images/${st.image}`}
+                            src={getImageUrl(st.image, url)}
                             alt={st.name}
                             className="details-sticker-img"
                           />

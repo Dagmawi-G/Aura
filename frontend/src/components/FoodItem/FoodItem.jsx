@@ -3,13 +3,15 @@ import "./FoodItem.css";
 import { StoreContext } from "../../context/StoreContext";
 
 const FoodItem = ({ product, currency = "ETB", onCustomize }) => {
-  const { url } = useContext(StoreContext);
+  const { url, getImageUrl } = useContext(StoreContext);
+
+  const imageSrc = getImageUrl ? getImageUrl(product.image, url) : (product.image?.startsWith("http") ? product.image : `${url}/images/${product.image}`);
 
   return (
     <div className="client-product-card aura-glass">
       <div className="product-media-wrap" onClick={onCustomize}>
         <img
-          src={`${url}/images/${product.image}`}
+          src={imageSrc}
           alt={product.name}
           className="client-product-img"
           onError={(e) => {

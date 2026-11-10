@@ -3,6 +3,7 @@ import "./List.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import AddItemModal from "../../components/AddItemModal/AddItemModal";
+import { getImageUrl } from "../../assets/assets";
 
 const List = ({ url }) => {
   const [list, setList] = useState([]);
@@ -321,7 +322,7 @@ const List = ({ url }) => {
                       #{actualIndex + 1} {isFirst ? "🔥 Trending #1" : ""}
                     </span>
                     <img
-                      src={`${url}/images/${item.image}`}
+                      src={getImageUrl(item.image, url)}
                       alt={item.name}
                       className="product-img"
                       onError={(e) => {
