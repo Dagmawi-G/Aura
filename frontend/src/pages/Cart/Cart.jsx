@@ -116,7 +116,20 @@ const Cart = () => {
         {/* Left Column: List of Customized Items */}
         <div className="cart-items-column">
           {cartItems.map((item) => (
-            <div key={item.cartItemId} className="cart-item-card aura-glass">
+            <div
+              key={item.cartItemId}
+              className="cart-item-card aura-glass clickable-card"
+              onClick={() => navigate(`/cart/item/${item.cartItemId}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/cart/item/${item.cartItemId}`);
+                }
+              }}
+              title="Click to review and edit order details"
+            >
               <div className="cart-item-media">
                 <img
                   src={`${url}/images/${item.image}`}
@@ -131,7 +144,10 @@ const Cart = () => {
                   <button
                     type="button"
                     className="btn-remove-item"
-                    onClick={() => removeFromCart(item.cartItemId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFromCart(item.cartItemId);
+                    }}
                     title="Remove item"
                   >
                     ✕
@@ -148,20 +164,13 @@ const Cart = () => {
                   <span className="print-plain-note">No written name</span>
                 )}
 
-                {/* Selected Stickers */}
+                {/* Selected Stickers (Text-only pills without images) */}
                 {item.selectedStickers && item.selectedStickers.length > 0 && (
                   <div className="cart-stickers-row">
                     <span className="stickers-tag-title">Stickers:</span>
                     <div className="cart-stickers-chips">
                       {item.selectedStickers.map((st, sidx) => (
                         <span key={sidx} className="cart-sticker-pill">
-                          {st.image && (
-                            <img
-                              src={`${url}/images/${st.image}`}
-                              alt=""
-                              className="cart-sticker-icon"
-                            />
-                          )}
                           <span>{st.name}</span>
                         </span>
                       ))}
@@ -175,7 +184,10 @@ const Cart = () => {
                     <button
                       type="button"
                       className="btn-qty"
-                      onClick={() => updateCartQuantity(item.cartItemId, -1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateCartQuantity(item.cartItemId, -1);
+                      }}
                     >
                       −
                     </button>
@@ -183,7 +195,10 @@ const Cart = () => {
                     <button
                       type="button"
                       className="btn-qty"
-                      onClick={() => updateCartQuantity(item.cartItemId, 1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateCartQuantity(item.cartItemId, 1);
+                      }}
                     >
                       +
                     </button>
@@ -197,6 +212,11 @@ const Cart = () => {
                       {item.price * item.quantity} {settings.currency}
                     </strong>
                   </div>
+                </div>
+
+                <div className="cart-item-click-hint">
+                  <span>Review & Edit Details</span>
+                  <span className="hint-arrow">→</span>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import Footer from "./components/Footer/Footer";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home/Home";
 import Cart from "./pages/Cart/Cart";
+import CartItemDetails from "./pages/CartItemDetails/CartItemDetails";
 import PlaceOrder from "./pages/PlaceOrder/PlaceOrder";
 import TrackOrder from "./pages/TrackOrder/TrackOrder";
 import { ToastContainer } from "react-toastify";
@@ -37,6 +38,8 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/cart/item/:cartItemId" element={<CartItemDetails />} />
+          <Route path="/cart/details/:cartItemId" element={<CartItemDetails />} />
           <Route path="/order" element={<PlaceOrder />} />
           <Route path="/track" element={<TrackOrder />} />
           <Route path="/track-order" element={<TrackOrder />} />

@@ -431,7 +431,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
   const toggleSticker = (sticker) => {
     const isOut = typeof sticker.stockQuantity === "number" && sticker.stockQuantity <= 0;
     if (isOut) {
-      toast.warning(`"${sticker.name}" is currently out of stock!`);
+      toast.warning(`"${sticker.name}" is sold out!`);
       return;
     }
 
@@ -623,9 +623,16 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                       return (
                         <div
                           key={st._id}
-                          className={`cust-sticker-card ${isSelected ? "selected" : ""} ${isOut ? "is-out-of-stock" : ""}`}
-                          onClick={() => toggleSticker(st)}
-                          title={isOut ? `"${st.name}" is out of stock` : isSelected ? `Selected: ${st.name}` : `Select ${st.name}`}
+                          className={`cust-sticker-card ${isSelected ? "selected" : ""} ${isOut ? "is-out-of-stock disabled" : ""}`}
+                          onClick={() => {
+                            if (isOut) {
+                              toast.warning(`"${st.name}" is sold out!`);
+                              return;
+                            }
+                            toggleSticker(st);
+                          }}
+                          title={isOut ? `"${st.name}" is sold out` : isSelected ? `Selected: ${st.name}` : `Select ${st.name}`}
+                          aria-disabled={isOut}
                         >
                           <div className="cust-sticker-img-container">
                             <img
@@ -633,7 +640,7 @@ const CustomizeModal = ({ product, isOpen, onClose }) => {
                               alt={st.name}
                               className="cust-sticker-img"
                             />
-                            {isOut && <span className="cust-sticker-out-flag">OUT</span>}
+                            {isOut && <span className="cust-sticker-out-flag">Sold Out</span>}
                             {isSelected && !isOut && (
                               <span className="cust-sticker-check-icon">✓</span>
                             )}

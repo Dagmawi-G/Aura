@@ -500,17 +500,33 @@
 
 .cust-sticker-out-flag {
   position: absolute;
-  top: -4px;
-  right: 0px;
-  font-size: 0.65rem;
+  top: -6px;
+  right: -2px;
+  font-size: 0.62rem;
   font-weight: 800;
-  color: #dc2626;
+  color: #b91c1c;
   background: #fee2e2;
   border: 1px solid #fca5a5;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(185, 28, 28, 0.15);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.cust-sticker-card.is-out-of-stock {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  background: #fafafa !important;
+  border-color: #e5e7eb !important;
+}
+
+.cust-sticker-card.is-out-of-stock:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: #e5e7eb !important;
 }
 
 /* Selected Stickers Names Summary Row */

@@ -255,6 +255,19 @@ const StoreContextProvider = (props) => {
     );
   };
 
+  // Update details of an existing cart item (custom text, selected stickers, quantity)
+  const updateCartItem = (cartItemId, updatedFields) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.cartItemId === cartItemId) {
+          return { ...item, ...updatedFields };
+        }
+        return item;
+      })
+    );
+    toast.success("Order details updated!");
+  };
+
   const clearCart = () => {
     setCartItems([]);
     setCartDeliveryInfo(null);
@@ -340,6 +353,7 @@ const StoreContextProvider = (props) => {
     addCustomizedItemToCart,
     removeFromCart,
     updateCartQuantity,
+    updateCartItem,
     clearCart,
     getCartSubtotal,
     getCartDeliveryFee,
