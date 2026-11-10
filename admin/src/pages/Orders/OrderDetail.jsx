@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
 import DeliveryRouteModal from "../../components/DeliveryRouteModal/DeliveryRouteModal";
+import { resolveOrderCoordinates } from "../../utils/geocoding";
+import { getYangoUrl, openYangoApp } from "../../utils/yango";
 
 export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
   if (!deliveryDate) {
@@ -95,6 +97,15 @@ const OrderDetail = ({ url }) => {
   const [selectedProofImg, setSelectedProofImg] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showRouteModal, setShowRouteModal] = useState(false);
+  const [resolvedCoords, setResolvedCoords] = useState(null);
+
+  useEffect(() => {
+    if (order) {
+      resolveOrderCoordinates(order).then((coords) => {
+        setResolvedCoords(coords);
+      });
+    }
+  }, [order]);
 
   const fetchOrder = async () => {
     try {
@@ -146,11 +157,6 @@ const OrderDetail = ({ url }) => {
     }
   };
 
-  const getYangoUrl = (lat, lng) => {
-    if (!lat || !lng || (lat === 0 && lng === 0)) return null;
-    return `https://yango.go.link/route?end-lat=${lat}&end-lon=${lng}`;
-  };
-
   if (loading) {
     return (
       <div className="loading-state">
@@ -162,9 +168,22 @@ const OrderDetail = ({ url }) => {
 
   if (!order) return null;
 
-  const yangoUrl = order.customerCoordinates
-    ? getYangoUrl(order.customerCoordinates.lat, order.customerCoordinates.lng)
-    : null;
+  const targetCoords = (order?.customerCoordinates?.lat && order?.customerCoordinates?.lng)
+    ? order.customerCoordinates
+    : resolvedCoords;
+
+  const yangoDirectUrl = getYangoUrl({
+    endCoords: targetCoords,
+    address: order?.deliveryAddress,
+  });
+
+  const handleOpenYangoPin = (e) => {
+    if (e) e.preventDefault();
+    openYangoApp({
+      endCoords: targetCoords,
+      address: order?.deliveryAddress,
+    });
+  };
 
   const totalMugs = (order.items || []).reduce((s, i) => s + (i.quantity || 0), 0);
 
@@ -331,20 +350,17 @@ const OrderDetail = ({ url }) => {
                     </svg>
                     <span>Pop up Delivery Route Map</span>
                   </button>
-                  {yangoUrl && (
-                    <a
-                      href={yangoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-map-link btn-route-secondary btn-yango-pin"
-                      title="Open drop-off location in Yango navigation"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                      </svg>
-                      Yango Navigation Pin
-                    </a>
-                  )}
+                  <a
+                    href={yangoDirectUrl}
+                    onClick={handleOpenYangoPin}
+                    className="btn-map-link btn-route-secondary btn-yango-pin"
+                    title="Launch drop-off destination directly in Yango app"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                    </svg>
+                    <span>Open in Yango App</span>
+                  </a>
                 </div>
               </div>
             ) : (

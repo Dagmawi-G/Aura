@@ -4,6 +4,7 @@ import "./DeliveryRouteModal.css";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { resolveOrderCoordinates } from "../../utils/geocoding";
+import { getYangoUrl, openYangoApp } from "../../utils/yango";
 import axios from "axios";
 
 // Fix Leaflet's broken default icon paths in Vite
@@ -209,10 +210,21 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
 
   if (!isOpen || !order) return null;
 
-  // Yango turn-by-turn driving & delivery navigation URL
-  const yangoNavUrl = resolvedCoords
-    ? `https://yango.go.link/route?start-lat=${storeCoords.lat}&start-lon=${storeCoords.lng}&end-lat=${resolvedCoords.lat}&end-lon=${resolvedCoords.lng}`
-    : `https://yango.com/en_int/order/`;
+  // Direct Yango App URL and Launcher
+  const yangoDirectUrl = getYangoUrl({
+    startCoords: storeCoords,
+    endCoords: resolvedCoords,
+    address: !resolvedCoords ? order.deliveryAddress : undefined,
+  });
+
+  const handleOpenYango = (e) => {
+    if (e) e.preventDefault();
+    openYangoApp({
+      startCoords: storeCoords,
+      endCoords: resolvedCoords,
+      address: !resolvedCoords ? order.deliveryAddress : undefined,
+    });
+  };
 
   return ReactDOM.createPortal(
     <div className="route-modal-backdrop" onClick={onClose}>
@@ -288,12 +300,11 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
               <h4>Coordinates could not be pinpointed automatically</h4>
               <p>The address "{order.deliveryAddress}" could not be mapped to exact GPS coordinates.</p>
               <a
-                href={yangoNavUrl}
-                target="_blank"
-                rel="noreferrer"
+                href={yangoDirectUrl}
+                onClick={handleOpenYango}
                 className="btn-yango-search"
               >
-                🔍 Open in Yango
+                🔍 Open in Yango App
               </a>
             </div>
           )}
@@ -320,23 +331,22 @@ const DeliveryRouteModal = ({ order, isOpen, onClose, url }) => {
         {/* Modal Action Footer */}
         <div className="route-modal-footer">
           <div className="footer-notes">
-            <span>💡 <strong>Tip for driver:</strong> Click navigation button to open GPS turn-by-turn navigation in Yango.</span>
+            <span>💡 <strong>Tip for driver:</strong> Tap navigation button to launch the route directly in the Yango app.</span>
           </div>
           <div className="footer-buttons">
             <button type="button" className="btn-cancel-route" onClick={onClose}>
               Close Map
             </button>
             <a
-              href={yangoNavUrl}
-              target="_blank"
-              rel="noreferrer"
+              href={yangoDirectUrl}
+              onClick={handleOpenYango}
               className="btn-yango-nav"
-              title="Launch GPS turn-by-turn navigation in Yango"
+              title="Launch GPS turn-by-turn navigation directly in Yango app"
             >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="3 11 22 2 13 21 11 13 3 11" />
               </svg>
-              <span>Open in Yango Navigation</span>
+              <span>Open in Yango App</span>
             </a>
           </div>
         </div>
