@@ -6,7 +6,7 @@ import { StoreContext } from "../../context/StoreContext";
 
 const Login = ({ url }) => {
   const { login } = useContext(StoreContext);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,15 +16,15 @@ const Login = ({ url }) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!username.trim() || !password) {
-      setErrorMsg("Please enter both username and password.");
+    if (!email.trim() || !password) {
+      setErrorMsg("Please enter both email and password.");
       return;
     }
 
     setLoading(true);
     try {
       const res = await axios.post(`${url}/api/user/admin-login`, {
-        username: username.trim(),
+        email: email.trim(),
         password
       });
 
@@ -32,7 +32,7 @@ const Login = ({ url }) => {
         toast.success(`Welcome back, ${res.data.user?.name || "Admin"}!`);
         login(res.data.token, res.data.user);
       } else {
-        setErrorMsg(res.data.message || "Invalid username or password.");
+        setErrorMsg(res.data.message || "Invalid email or password.");
         toast.error(res.data.message || "Login failed");
       }
     } catch (err) {
@@ -65,18 +65,17 @@ const Login = ({ url }) => {
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="login-field-group">
-            <label className="login-label">Admin Username</label>
+            <label className="login-label">Admin Email Address</label>
             <div className="login-input-wrap">
-              <span className="input-icon">👤</span>
+              <span className="input-icon">✉️</span>
               <input
-                type="text"
+                type="email"
                 required
                 className="login-input"
-                placeholder="Admin"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoCapitalize="none"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 autoFocus
               />
             </div>

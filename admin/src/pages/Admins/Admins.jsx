@@ -12,7 +12,7 @@ const Admins = ({ url }) => {
   // New Admin Form Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAdminName, setNewAdminName] = useState("");
-  const [newAdminUsername, setNewAdminUsername] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminConfirmPassword, setNewAdminConfirmPassword] = useState("");
   const [creating, setCreating] = useState(false);
@@ -47,7 +47,7 @@ const Admins = ({ url }) => {
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
 
-    if (!newAdminName.trim() || !newAdminUsername.trim() || !newAdminPassword) {
+    if (!newAdminName.trim() || !newAdminEmail.trim() || !newAdminPassword) {
       toast.error("Please fill in all fields.");
       return;
     }
@@ -68,7 +68,7 @@ const Admins = ({ url }) => {
         `${url}/api/user/admin-create`,
         {
           name: newAdminName.trim(),
-          username: newAdminUsername.trim(),
+          email: newAdminEmail.trim(),
           password: newAdminPassword
         },
         getAuthHeaders()
@@ -78,7 +78,7 @@ const Admins = ({ url }) => {
         toast.success(res.data.message || "Administrator added successfully!");
         setShowAddModal(false);
         setNewAdminName("");
-        setNewAdminUsername("");
+        setNewAdminEmail("");
         setNewAdminPassword("");
         setNewAdminConfirmPassword("");
         fetchAdmins();
@@ -147,7 +147,7 @@ const Admins = ({ url }) => {
         </div>
         <div className="admin-stat-card">
           <span className="stat-label">Your Active Account</span>
-          <strong className="stat-user-email">{adminUser?.username || "Logged in"}</strong>
+          <strong className="stat-user-email">{adminUser?.email || "Logged in"}</strong>
         </div>
         <div className="admin-stat-card">
           <span className="stat-label">Access Level</span>
@@ -184,7 +184,7 @@ const Admins = ({ url }) => {
               <thead>
                 <tr>
                   <th>Administrator</th>
-                  <th>Username</th>
+                  <th>Email Address</th>
                   <th>Role</th>
                   <th>Created Date</th>
                   <th className="text-right">Actions</th>
@@ -192,7 +192,7 @@ const Admins = ({ url }) => {
               </thead>
               <tbody>
                 {admins.map((adm) => {
-                  const isCurrent = adminUser && (adminUser.id === adm._id || (adm.username && adminUser.username === adm.username));
+                  const isCurrent = adminUser && (adminUser.id === adm._id || adminUser.email === adm.email);
                   const initials = adm.name
                     ? adm.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
                     : "AD";
@@ -209,7 +209,7 @@ const Admins = ({ url }) => {
                         </div>
                       </td>
                       <td>
-                        <span className="admin-email-text">{adm.username || "—"}</span>
+                        <span className="admin-email-text">{adm.email}</span>
                       </td>
                       <td>
                         <span className="role-tag">Admin</span>
@@ -281,14 +281,14 @@ const Admins = ({ url }) => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Username</label>
+                <label className="form-label">Email Address</label>
                 <input
-                  type="text"
+                  type="email"
                   required
                   className="form-input"
-                  placeholder="e.g. abebe"
-                  value={newAdminUsername}
-                  onChange={(e) => setNewAdminUsername(e.target.value)}
+                  placeholder="e.g. abebe@aura.com"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
                 />
               </div>
 
@@ -366,7 +366,7 @@ const Admins = ({ url }) => {
             <div className="delete-modal-body">
               <p>
                 Are you sure you want to permanently delete administrator{" "}
-                <strong>{adminToDelete.name}</strong> (<code>{adminToDelete.username || "no username"}</code>)?
+                <strong>{adminToDelete.name}</strong> (<code>{adminToDelete.email}</code>)?
               </p>
               <p className="warning-note">
                 They will immediately lose all access to the Aura Admin Control Panel.

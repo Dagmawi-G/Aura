@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
-import userModel from "./models/userModel.js";
 import foodRouter from "./routes/foodRoute.js";
 import userRouter from "./routes/userRoute.js";
 import settingRouter from "./routes/settingRoute.js";
@@ -25,11 +23,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 // DB connection (create the first admin with: npm run create-admin)
-connectDB().then(() => {
-  if (mongoose.connection.readyState !== 1) return;
-  // Apply the username index and replace the old required-email index
-  userModel.syncIndexes().catch((err) => console.error("Could not sync user indexes:", err.message));
-});
+connectDB();
 
 // Health check / Keep-Alive ping endpoints (to prevent Render from sleeping)
 const handlePing = (req, res) => {

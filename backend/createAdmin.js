@@ -1,14 +1,8 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import userModel, { USERNAME_COLLATION, USERNAME_PATTERN } from "./models/userModel.js";
+import userModel from "./models/userModel.js";
 import "dotenv/config";
 import readline from "readline";
-
-// Usage: npm run create-admin [-- <username> <password>]
-// Creates an admin, or resets the password of the admin with that username.
-// Default username: "Admin".
-
-const DEFAULT_USERNAME = "Admin";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -32,66 +26,54 @@ const createAdmin = async () => {
     await mongoose.connect(mongoUrl);
     console.log("Connected to MongoDB successfully.\n");
 
-    // Apply the username index and replace the old required-email index
-    await userModel.syncIndexes();
-
     const args = process.argv.slice(2);
-    let username = args[0];
-    let password = args[1];
+    let name = args[0];
+    let email = args[1];
+    let password = args[2];
 
-    if (!password) {
-      console.log("--- Create Admin Account / Reset Admin Password ---");
-      username =
-        username ||
-        (await askQuestion(`Enter Admin Username (default: ${DEFAULT_USERNAME}): `)) ||
-        DEFAULT_USERNAME;
-      password = await askQuestion("Enter Admin Password (min 8 chars): ");
+    if (!email || !password) {
+      console.log("--- Create / Promote Admin Account ---");
+      name = name || (await askQuestion("Enter Admin Name (e.g. Admin): ")) || "Admin";
+      email = email || (await askQuestion("Enter Admin Email: "));
+      password = password || (await askQuestion("Enter Admin Password (min 8 chars): "));
     }
 
-    username = String(username || DEFAULT_USERNAME).trim();
-
-    if (!USERNAME_PATTERN.test(username)) {
-      console.error("Error: Username must be 3-30 characters: letters, numbers, dot, dash or underscore.");
+    if (!email || !password) {
+      console.error("Error: Email and password are required.");
       process.exit(1);
     }
 
-    if (!password || password.length < 8) {
+    if (password.length < 8) {
       console.error("Error: Password must be at least 8 characters long.");
       process.exit(1);
     }
 
-    const hashedPassword = await bcrypt.hash(password, await bcrypt.genSalt(10));
+    const existingUser = await userModel.findOne({ email: email.toLowerCase() });
 
-    let account = await userModel.findOne({ username }).collation(USERNAME_COLLATION);
-
-    // Older admins signed in with an email and have no username yet.
-    // If there is exactly one, give it this username instead of creating a second account.
-    if (!account) {
-      const legacyAdmins = await userModel.find({ role: "admin", username: { $exists: false } });
-      if (legacyAdmins.length === 1) {
-        account = legacyAdmins[0];
-        console.log(`\nConverting existing email-based admin (${account.email || account.name}) to username sign-in.`);
-      }
-    }
-
-    if (account) {
-      account.username = username;
-      account.name = username;
-      account.role = "admin";
-      account.password = hashedPassword;
-      await account.save();
-      console.log(`\nSuccess: Admin "${username}" updated with the new password.`);
+    if (existingUser) {
+      existingUser.role = "admin";
+      if (name) existingUser.name = name;
+      const salt = await bcrypt.genSalt(10);
+      existingUser.password = await bcrypt.hash(password, salt);
+      await existingUser.save();
+      console.log(`\nSuccess: Existing account (${email}) has been updated with admin role and new password!`);
     } else {
-      await new userModel({
-        name: username,
-        username,
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const newAdmin = new userModel({
+        name: name || "Admin",
+        email: email.toLowerCase(),
         password: hashedPassword,
         role: "admin",
-      }).save();
-      console.log(`\nSuccess: New admin "${username}" created.`);
+      });
+
+      await newAdmin.save();
+      console.log(`\nSuccess: New admin account (${email}) created successfully!`);
     }
 
-    console.log(`Username: ${username}`);
+    console.log(`Role: admin`);
+    console.log(`Email: ${email.toLowerCase()}`);
     console.log(`You can now log in at the Admin panel.\n`);
 
     process.exit(0);

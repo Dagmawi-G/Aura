@@ -148,7 +148,7 @@ cd admin
 npm run dev
 ```
 
-Create the first admin user with `npm --prefix backend run create-admin`. Admins sign in with a username (default `Admin`, not case-sensitive) and a password you choose; there is no preset password. The same command also resets an existing admin's password.
+Create the first admin user with `npm --prefix backend run create-admin`. There is no default admin account; the same command also resets an existing admin's password.
 
 ---
 

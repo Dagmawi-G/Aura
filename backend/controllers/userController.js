@@ -1,6 +1,7 @@
-import userModel, { USERNAME_COLLATION, USERNAME_PATTERN } from "../models/userModel.js";
+import userModel from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import validator from "validator";
 
 // Create token helper
 const createToken = (id) => {
@@ -13,17 +14,15 @@ const createToken = (id) => {
 
 // Admin Login
 const adminLogin = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   try {
-    if (typeof username !== "string" || typeof password !== "string" || !username.trim() || !password) {
-      return res.status(400).json({ success: false, message: "Username and password are required" });
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+      return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    const user = await userModel
-      .findOne({ username: username.trim() })
-      .collation(USERNAME_COLLATION);
+    const user = await userModel.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid username or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     let isMatch = false;
@@ -34,7 +33,7 @@ const adminLogin = async (req, res) => {
     }
 
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid username or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     // Only existing admins may sign in here; an account is never promoted by logging in
@@ -50,7 +49,7 @@ const adminLogin = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        username: user.username,
+        email: user.email,
         role: "admin"
       }
     });
@@ -77,35 +76,47 @@ const listAdminAccounts = async (req, res) => {
 
 // Create a New Admin Account (Protected)
 const createAdminAccount = async (req, res) => {
-  const { name, username, password } = req.body;
+  const { name, email, password } = req.body;
   try {
-    if (typeof username !== "string" || typeof password !== "string" || !username.trim() || !password) {
-      return res.status(400).json({ success: false, message: "Username and password are required" });
+    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string" || !name.trim() || !email.trim() || !password) {
+      return res.status(400).json({ success: false, message: "Name, email, and password are required" });
     }
 
-    const cleanUsername = username.trim();
-    if (!USERNAME_PATTERN.test(cleanUsername)) {
-      return res.status(400).json({
-        success: false,
-        message: "Username must be 3-30 characters: letters, numbers, dot, dash or underscore"
-      });
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ success: false, message: "Please provide a valid email address" });
     }
 
     if (password.length < 8) {
       return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
     }
 
-    const existing = await userModel.findOne({ username: cleanUsername }).collation(USERNAME_COLLATION);
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await userModel.findOne({ email: normalizedEmail });
+
     if (existing) {
-      return res.status(400).json({ success: false, message: "This username is already taken" });
+      if (existing.role === "admin") {
+        return res.status(400).json({ success: false, message: "An admin with this email already exists" });
+      }
+      // Promote existing user to admin
+      const salt = await bcrypt.genSalt(Number(process.env.SALT) || 10);
+      existing.password = await bcrypt.hash(password, salt);
+      existing.role = "admin";
+      existing.name = name.trim();
+      await existing.save();
+
+      return res.json({
+        success: true,
+        message: "Existing account promoted to Admin successfully",
+        admin: { id: existing._id, name: existing.name, email: existing.email, role: "admin" }
+      });
     }
 
     const salt = await bcrypt.genSalt(Number(process.env.SALT) || 10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newAdmin = new userModel({
-      name: typeof name === "string" && name.trim() ? name.trim() : cleanUsername,
-      username: cleanUsername,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: "admin"
     });
@@ -114,7 +125,7 @@ const createAdminAccount = async (req, res) => {
     res.json({
       success: true,
       message: "New Administrator created successfully",
-      admin: { id: saved._id, name: saved.name, username: saved.username, role: "admin", createdAt: saved.createdAt }
+      admin: { id: saved._id, name: saved.name, email: saved.email, role: "admin", createdAt: saved.createdAt }
     });
   } catch (error) {
     console.error("Create admin error:", error);
@@ -154,7 +165,7 @@ const deleteAdminAccount = async (req, res) => {
     }
 
     await userModel.findByIdAndDelete(adminIdToDelete);
-    res.json({ success: true, message: `Admin account (${target.username || target.name}) deleted successfully` });
+    res.json({ success: true, message: `Admin account (${target.email}) deleted successfully` });
   } catch (error) {
     console.error("Delete admin error:", error);
     res.status(500).json({ success: false, message: "Failed to delete admin account" });

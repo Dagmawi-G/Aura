@@ -31,7 +31,7 @@ const adminAuth = async (req, res, next) => {
     req.admin = {
       id: user._id,
       name: user.name,
-      username: user.username,
+      email: user.email,
       role: user.role
     };
     req.body.adminId = user._id;
