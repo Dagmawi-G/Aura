@@ -38,12 +38,13 @@ const orderSchema = new mongoose.Schema({
   status: { 
     type: String, 
     enum: [
+      "Ordered",
       "Payment Verified", 
       "Completed", 
       "Cancelled",
       "Pending Verification" 
     ], 
-    default: "Payment Verified" 
+    default: "Ordered" 
   },
   notes: { type: String, default: "" },
   deliveryDate: { type: String, default: "" }, // Preferred / needed by date (YYYY-MM-DD)

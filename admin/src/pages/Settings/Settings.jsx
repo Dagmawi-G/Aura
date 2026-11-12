@@ -4,6 +4,7 @@ import "./Settings.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import BankLogo from "../../components/BankLogos/BankLogos";
+import { sanitizePhoneInput, isValidEthiopianPhone } from "../../utils/phone";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -258,6 +259,10 @@ const Settings = ({ url }) => {
 
   const handleSaveSettings = async (e) => {
     if (e) e.preventDefault();
+    if (settings.storePhone && !isValidEthiopianPhone(settings.storePhone)) {
+      toast.error("Store phone must have 9 digits after 0, 251, or +251 (e.g. 0911223344)");
+      return;
+    }
     setSaving(true);
     try {
       const cleanSettings = {
@@ -700,14 +705,16 @@ const Settings = ({ url }) => {
             <div className="form-group">
               <label className="form-label">📞 Store Contact Phone (For Urgent Order Calls)</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="tel"
                 className="form-input"
+                maxLength={13}
                 value={settings.storePhone || ""}
-                onChange={(e) => setSettings({ ...settings, storePhone: e.target.value })}
-                placeholder="e.g. +251 911 223 344 or 0911223344"
+                onChange={(e) => setSettings({ ...settings, storePhone: sanitizePhoneInput(e.target.value) })}
+                placeholder="e.g. +251911223344 or 0911223344"
                 required
               />
-              <span className="label-subtext">This phone number is recommended to urgent order customers to notify you immediately.</span>
+              <span className="label-subtext">9 digits after 0, 251, or +251. Recommended to urgent order customers to notify you immediately.</span>
             </div>
 
             <div className="form-group">

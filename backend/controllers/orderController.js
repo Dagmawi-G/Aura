@@ -7,9 +7,28 @@ import { uploadToCloudinary } from "../config/cloudinary.js";
 // In-memory orders store fallback if MongoDB is offline
 const inMemoryOrders = new Map();
 
+// Phone number format: 9 digits after 0, 251, or +251
+const ETHIOPIAN_PHONE_REGEX = /^(?:\+251|251|0)\d{9}$/;
+
 // Guest Order Submission with Payment Proof
 const submitGuestOrder = async (req, res) => {
   try {
+    const cleanPrimaryPhone = String(req.body.customerPhone || "").trim().replace(/[\s-]/g, "");
+    if (!ETHIOPIAN_PHONE_REGEX.test(cleanPrimaryPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Primary phone number must have 9 digits after 0, 251, or +251"
+      });
+    }
+
+    const cleanSecondaryPhone = String(req.body.secondaryPhone || "").trim().replace(/[\s-]/g, "");
+    if (cleanSecondaryPhone && !ETHIOPIAN_PHONE_REGEX.test(cleanSecondaryPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Additional phone number must have 9 digits after 0, 251, or +251"
+      });
+    }
+
     const paymentProofFilename = req.file
       ? (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename
       : "";
@@ -51,8 +70,8 @@ const submitGuestOrder = async (req, res) => {
     const newOrder = new orderModel({
       orderNumber: orderNumber,
       customerName: req.body.customerName || "Guest Customer",
-      customerPhone: req.body.customerPhone || "",
-      secondaryPhone: req.body.secondaryPhone || "",
+      customerPhone: cleanPrimaryPhone,
+      secondaryPhone: cleanSecondaryPhone,
       customerEmail: req.body.customerEmail || "",
       deliveryType: req.body.deliveryType || "Delivery",
       deliveryAddress: req.body.deliveryAddress || "",
@@ -70,7 +89,7 @@ const submitGuestOrder = async (req, res) => {
       paymentProof: paymentProofFilename,
       notes: req.body.notes || "",
       deliveryDate: req.body.deliveryDate || "",
-      status: req.body.status || "Payment Verified"
+      status: req.body.status || "Ordered"
     });
 
     if (mongoose.connection.readyState === 1) {
@@ -146,9 +165,17 @@ const listOrders = async (req, res) => {
 };
 
 // Update order status
+const ALLOWED_STATUSES = ["Ordered", "Payment Verified", "Completed", "Cancelled"];
+
 const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Allowed statuses: Ordered, Payment Verified, Completed, Cancelled"
+      });
+    }
     if (mongoose.connection.readyState === 1) {
       const updatedOrder = await orderModel.findByIdAndUpdate(
         orderId,

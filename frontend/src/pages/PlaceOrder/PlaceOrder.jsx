@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import BankLogo, { getPaymentProviderInfo } from "../../components/BankLogos/BankLogos";
 import { searchAddisPlaces } from "../../utils/geocoding";
+import { sanitizePhoneInput, isValidEthiopianPhone } from "../../utils/phone";
 
 const getImageMimeType = (file) => {
   if (file && file.type && file.type.startsWith("image/") && file.type !== "image/octet-stream") {
@@ -327,6 +328,16 @@ const PlaceOrder = () => {
       return;
     }
 
+    if (!isValidEthiopianPhone(customerPhone)) {
+      toast.error("Primary phone number must have 9 digits after 0, 251, or +251 (e.g. 0911223344)");
+      return;
+    }
+
+    if (customerSecondaryPhone.trim() && !isValidEthiopianPhone(customerSecondaryPhone)) {
+      toast.error("Additional phone number must have 9 digits after 0, 251, or +251");
+      return;
+    }
+
     if (!deliveryDate) {
       toast.error(`Please select your ${deliveryType === "Pickup" ? "pickup" : "delivery"} date`);
       return;
@@ -572,11 +583,13 @@ const PlaceOrder = () => {
                     type="tel"
                     inputMode="tel"
                     className="form-input"
-                    placeholder="e.g. 0911223344"
+                    placeholder="e.g. 0911223344 or +251911223344"
+                    maxLength={13}
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => setCustomerPhone(sanitizePhoneInput(e.target.value))}
                     required
                   />
+                  <span className="field-hint">9 digits after 0, 251, or +251</span>
                 </div>
 
                 <div className="form-group">
@@ -586,9 +599,11 @@ const PlaceOrder = () => {
                     inputMode="tel"
                     className="form-input"
                     placeholder="e.g. 0922334455 (Backup contact)"
+                    maxLength={13}
                     value={customerSecondaryPhone}
-                    onChange={(e) => setCustomerSecondaryPhone(e.target.value)}
+                    onChange={(e) => setCustomerSecondaryPhone(sanitizePhoneInput(e.target.value))}
                   />
+                  <span className="field-hint">9 digits after 0, 251, or +251</span>
                 </div>
               </div>
 

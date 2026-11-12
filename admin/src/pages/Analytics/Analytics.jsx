@@ -67,7 +67,9 @@ const Analytics = ({ url }) => {
   // Valid orders (excluding cancelled for revenue calculations)
   const nonCancelledOrders = filteredOrders.filter((o) => o.status !== "Cancelled");
   const completedOrders = filteredOrders.filter((o) => o.status === "Completed");
-  const pendingVerificationOrders = filteredOrders.filter((o) => o.status === "Pending Verification");
+  const pendingVerificationOrders = filteredOrders.filter(
+    (o) => o.status === "Ordered" || o.status === "Pending Verification"
+  );
 
   // 1. Total Sold Items (Mugs & Merchandise)
   const totalSoldItems = nonCancelledOrders.reduce((acc, order) => {
@@ -165,8 +167,9 @@ const Analytics = ({ url }) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
-  // 10. Order Status Distribution (Official 3 statuses: Payment Verified, Completed, Cancelled)
+  // 10. Order Status Distribution (Official 4 statuses: Ordered, Payment Verified, Completed, Cancelled)
   const statusCounts = {
+    "Ordered": 0,
     "Payment Verified": 0,
     "Completed": 0,
     "Cancelled": 0
@@ -177,8 +180,10 @@ const Analytics = ({ url }) => {
       statusCounts["Completed"] += 1;
     } else if (order.status === "Cancelled") {
       statusCounts["Cancelled"] += 1;
-    } else {
+    } else if (order.status === "Payment Verified") {
       statusCounts["Payment Verified"] += 1;
+    } else {
+      statusCounts["Ordered"] += 1;
     }
   });
 
@@ -363,6 +368,7 @@ const Analytics = ({ url }) => {
 
               <div className="status-funnel-list">
                 {[
+                  { key: "Ordered", label: "Ordered", color: "#f59e0b", icon: "🛍️" },
                   { key: "Payment Verified", label: "Payment Verified", color: "#10b981", icon: "💳" },
                   { key: "Completed", label: "Completed Orders", color: "#047857", icon: "✅" },
                   { key: "Cancelled", label: "Cancelled Orders", color: "#ef4444", icon: "❌" }

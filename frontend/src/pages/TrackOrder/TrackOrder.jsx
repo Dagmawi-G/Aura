@@ -112,14 +112,20 @@ const TrackOrder = () => {
     }
   }, [searchParams]);
 
+  const normalizeStatus = (status) => {
+    if (!status || status === "Pending Verification") return "Ordered";
+    return status;
+  };
+
   const getStepActiveIndex = (status) => {
-    switch (status) {
+    switch (normalizeStatus(status)) {
       case "Completed":
+        return 2;
+      case "Payment Verified":
         return 1;
       case "Cancelled":
         return -1;
-      case "Payment Verified":
-      case "Pending Verification":
+      case "Ordered":
       default:
         return 0;
     }
@@ -222,9 +228,22 @@ const TrackOrder = () => {
                   </div>
 
                   <div className="order-status-badge-wrap">
-                    <span className={`status-pill ${order.status === "Completed" ? "completed" : order.status === "Cancelled" ? "cancelled" : "verified"}`}>
-                      {order.status}
-                    </span>
+                    {(() => {
+                      const displayStatus = normalizeStatus(order.status);
+                      const pillClass =
+                        displayStatus === "Completed"
+                          ? "completed"
+                          : displayStatus === "Cancelled"
+                          ? "cancelled"
+                          : displayStatus === "Payment Verified"
+                          ? "verified"
+                          : "ordered";
+                      return (
+                        <span className={`status-pill ${pillClass}`}>
+                          {displayStatus}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -260,8 +279,9 @@ const TrackOrder = () => {
                   </div>
                 ) : (
                   <div className="stepper-progress-wrap">
-                    <div className="stepper-steps two-steps">
+                    <div className="stepper-steps three-steps">
                       {[
+                        { title: "Ordered", icon: "🛍️" },
                         { title: "Payment Verified", icon: "💳" },
                         { title: "Completed", icon: "🎉" }
                       ].map((step, idx) => {

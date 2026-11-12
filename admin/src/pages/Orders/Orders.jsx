@@ -90,13 +90,15 @@ const Orders = ({ url }) => {
     return () => clearInterval(interval);
   }, []);
 
+  const normalizeStatus = (status) => {
+    if (!status || status === "Pending Verification") return "Ordered";
+    return status;
+  };
+
   const getStatusClass = (status) => {
-    switch (status) {
-      case "Pending Verification": return "pending";
+    switch (normalizeStatus(status)) {
+      case "Ordered": return "pending";
       case "Payment Verified": return "verified";
-      case "Processing / Printing": return "processing";
-      case "Out for Delivery":
-      case "Ready for Pickup": return "delivery";
       case "Completed": return "completed";
       case "Cancelled": return "cancelled";
       default: return "pending";
@@ -233,7 +235,7 @@ const Orders = ({ url }) => {
                     )}
                   </div>
                   <span className={`status-pill ${getStatusClass(order.status)}`}>
-                    {isCompleted ? "Completed" : order.status}
+                    {normalizeStatus(order.status)}
                   </span>
                 </div>
 

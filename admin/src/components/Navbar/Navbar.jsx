@@ -14,7 +14,7 @@ const Navbar = ({ url }) => {
       const res = await axios.get(`${url}/api/order/list`);
       if (res.data.success) {
         const pending = res.data.data.filter(
-          (o) => o.status === "Payment Verified" || o.status === "Pending Verification"
+          (o) => o.status !== "Completed" && o.status !== "Cancelled"
         ).length;
         setPendingCount(pending);
       }

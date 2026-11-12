@@ -69,19 +69,22 @@ export const getDeliveryCountdown = (deliveryDate, isUrgent) => {
 
 const getAvailableStatuses = () => {
   return [
+    "Ordered",
     "Payment Verified",
     "Completed",
     "Cancelled",
   ];
 };
 
+const normalizeStatus = (status) => {
+  if (!status || status === "Pending Verification") return "Ordered";
+  return status;
+};
+
 const getStatusClass = (status) => {
-  switch (status) {
-    case "Pending Verification": return "pending";
+  switch (normalizeStatus(status)) {
+    case "Ordered": return "pending";
     case "Payment Verified": return "verified";
-    case "Processing / Printing": return "processing";
-    case "Out for Delivery":
-    case "Ready for Pickup": return "delivery";
     case "Completed": return "completed";
     case "Cancelled": return "cancelled";
     default: return "pending";
@@ -212,7 +215,7 @@ const OrderDetail = ({ url }) => {
         <div className="detail-order-id-wrap">
           <span className="detail-order-num">{order.orderNumber}</span>
           {order.isUrgent && <span className="urgent-badge-compact">⚡ URGENT</span>}
-          <span className={`status-pill ${getStatusClass(order.status)}`}>{order.status}</span>
+          <span className={`status-pill ${getStatusClass(order.status)}`}>{normalizeStatus(order.status)}</span>
         </div>
         <div className="detail-date-wrap">
           <span className="detail-date">
@@ -464,22 +467,22 @@ const OrderDetail = ({ url }) => {
               {getAvailableStatuses(order.deliveryType).map((s) => (
                 <button
                   key={s}
-                  className={`status-btn ${order.status === s ? "active" : ""} ${getStatusClass(s)}`}
-                  onClick={() => order.status !== s && handleStatusChange(s)}
+                  className={`status-btn ${normalizeStatus(order.status) === s ? "active" : ""} ${getStatusClass(s)}`}
+                  onClick={() => normalizeStatus(order.status) !== s && handleStatusChange(s)}
                   disabled={updatingStatus}
                 >
                   {s}
                 </button>
               ))}
             </div>
-            {order.status === "Pending Verification" && (
+            {normalizeStatus(order.status) === "Ordered" && (
               <button
                 type="button"
                 className="btn-verify-success"
                 onClick={() => handleStatusChange("Payment Verified")}
                 disabled={updatingStatus}
               >
-                ✅ Confirm & Verify Payment
+                ✅ Payment Verified
               </button>
             )}
           </div>

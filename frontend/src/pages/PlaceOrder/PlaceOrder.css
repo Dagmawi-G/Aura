@@ -1552,3 +1552,10 @@
     padding: 1rem;
   }
 }
+
+.field-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
