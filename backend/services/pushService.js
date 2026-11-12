@@ -12,9 +12,6 @@ try {
   console.warn("Could not initialize VAPID details:", e.message);
 }
 
-// In-memory fallback if MongoDB connection isn't present
-const inMemorySubscriptions = new Map();
-
 export const getVapidPublicKey = () => VAPID_PUBLIC_KEY;
 
 export const savePushSubscription = async (subscription, adminName = "Admin") => {
@@ -22,25 +19,17 @@ export const savePushSubscription = async (subscription, adminName = "Admin") =>
     throw new Error("Invalid subscription object");
   }
 
-  // Always keep in-memory fallback
-  inMemorySubscriptions.set(subscription.endpoint, subscription);
-
-  try {
-    await pushSubscriptionModel.findOneAndUpdate(
-      { endpoint: subscription.endpoint },
-      {
-        endpoint: subscription.endpoint,
-        expirationTime: subscription.expirationTime,
-        keys: subscription.keys,
-        adminName: adminName,
-        createdAt: new Date()
-      },
-      { upsert: true, new: true }
-    );
-  } catch (err) {
-    // If DB isn't available, inMemorySubscriptions is already set
-    console.warn("DB save for push subscription fallback to memory:", err.message);
-  }
+  await pushSubscriptionModel.findOneAndUpdate(
+    { endpoint: subscription.endpoint },
+    {
+      endpoint: subscription.endpoint,
+      expirationTime: subscription.expirationTime,
+      keys: subscription.keys,
+      adminName: adminName,
+      createdAt: new Date()
+    },
+    { upsert: true, new: true }
+  );
 
   return true;
 };
@@ -71,26 +60,14 @@ export const notifyAdminsOfOrder = async (order) => {
     }
   });
 
-  let subscriptions = [];
+  let allSubs = [];
   try {
-    subscriptions = await pushSubscriptionModel.find({});
+    allSubs = await pushSubscriptionModel.find({});
   } catch (e) {
-    // Fallback to in-memory
-    subscriptions = Array.from(inMemorySubscriptions.values());
+    console.warn("[Push Notification] Could not load subscriptions:", e.message);
+    return;
   }
 
-  // Combine both sources without duplicates
-  const endpointMap = new Map();
-  for (const s of subscriptions) {
-    if (s && s.endpoint) endpointMap.set(s.endpoint, s);
-  }
-  for (const s of inMemorySubscriptions.values()) {
-    if (s && s.endpoint && !endpointMap.has(s.endpoint)) {
-      endpointMap.set(s.endpoint, s);
-    }
-  }
-
-  const allSubs = Array.from(endpointMap.values());
   if (allSubs.length === 0) {
     console.log(`[Push Notification] No registered admin subscriptions. Order #${order.orderNumber} logged.`);
     return;
@@ -108,7 +85,6 @@ export const notifyAdminsOfOrder = async (order) => {
     } catch (err) {
       if (err.statusCode === 410 || err.statusCode === 404) {
         // Subscription is expired or gone, clean up
-        inMemorySubscriptions.delete(sub.endpoint);
         try {
           await pushSubscriptionModel.findOneAndDelete({ endpoint: sub.endpoint });
         } catch (delErr) {}

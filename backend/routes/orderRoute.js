@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  requireDb,
   submitGuestOrder,
   listOrders,
   updateStatus,
@@ -14,8 +15,8 @@ import { adminAuth } from "../middleware/auth.js";
 const orderRouter = express.Router();
 
 // Public (storefront)
-orderRouter.post("/submit", upload.single("paymentProof"), submitGuestOrder);
-orderRouter.get("/track/:query", trackOrder);
+orderRouter.post("/submit", requireDb, upload.single("paymentProof"), submitGuestOrder);
+orderRouter.get("/track/:query", requireDb, trackOrder);
 orderRouter.get("/vapid-key", getVapidPublicKeyHandler);
 
 // Admin only

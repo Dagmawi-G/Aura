@@ -7,8 +7,16 @@ import fs from "fs";
 import { notifyAdminsOfOrder, getVapidPublicKey, savePushSubscription } from "../services/pushService.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
 
-// In-memory orders store fallback if MongoDB is offline
-const inMemoryOrders = new Map();
+// Orders are only accepted while the database is reachable, so a paid order can never be lost in memory
+const requireDb = (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: "The store is temporarily unavailable. Please try again in a moment."
+    });
+  }
+  next();
+};
 
 // Phone number format: 9 digits after 0, 251, or +251
 const ETHIOPIAN_PHONE_REGEX = /^(?:\+251|251|0)\d{9}$/;
@@ -53,6 +61,15 @@ const buildPricedItems = async (rawItems) => {
   const products = await foodModel.find({ _id: { $in: ids } });
   const productById = new Map(products.map((p) => [String(p._id), p]));
 
+  const stickerIds = clientItems.flatMap((itm) =>
+    Array.isArray(itm.selectedStickers) ? itm.selectedStickers.map((st) => st?.id || st?._id) : []
+  );
+  if (stickerIds.some((id) => !id || !mongoose.Types.ObjectId.isValid(id))) {
+    return { error: "Your cart contains a sticker we could not recognise. Please re-select your stickers." };
+  }
+  const stickerDocs = await stickerModel.find({ _id: { $in: stickerIds } });
+  const stickerById = new Map(stickerDocs.map((st) => [String(st._id), st]));
+
   const items = [];
   for (const itm of clientItems) {
     const product = productById.get(String(itm.foodId));
@@ -63,7 +80,14 @@ const buildPricedItems = async (rawItems) => {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_ITEM_QUANTITY) {
       return { error: `Invalid quantity for "${product.name}".` };
     }
-    const stickers = Array.isArray(itm.selectedStickers) ? itm.selectedStickers : [];
+    const selectedStickers = [];
+    for (const st of Array.isArray(itm.selectedStickers) ? itm.selectedStickers : []) {
+      const sticker = stickerById.get(String(st.id || st._id));
+      if (!sticker) {
+        return { error: `The sticker "${st.name || "you selected"}" is no longer available. Please re-select your stickers.` };
+      }
+      selectedStickers.push({ id: String(sticker._id), name: sticker.name, image: sticker.image });
+    }
     items.push({
       foodId: String(product._id),
       name: product.name,
@@ -71,14 +95,65 @@ const buildPricedItems = async (rawItems) => {
       quantity,
       image: product.image,
       customText: String(itm.customText || ""),
-      selectedStickers: stickers.map((st) => ({
-        id: st?.id || st?._id,
-        name: st?.name,
-        image: st?.image
-      }))
+      selectedStickers
     });
   }
   return { items };
+};
+
+// How many of each sticker an order uses: sticker id -> quantity
+const stickerNeedsFromItems = (items) => {
+  const needs = new Map();
+  for (const itm of items || []) {
+    for (const st of itm.selectedStickers || []) {
+      if (st.id && mongoose.Types.ObjectId.isValid(st.id)) {
+        needs.set(String(st.id), (needs.get(String(st.id)) || 0) + itm.quantity);
+      }
+    }
+  }
+  return needs;
+};
+
+const releaseStickerStock = async (needs) => {
+  for (const [id, qty] of needs) {
+    await stickerModel.updateOne({ _id: id }, { $inc: { stockQuantity: qty } });
+  }
+};
+
+// Take stock for every sticker, or take nothing. Each decrement only succeeds if enough stock is left,
+// so two simultaneous orders cannot both get the last sticker.
+const reserveStickerStock = async (needs, { skipDeleted = false } = {}) => {
+  const ids = [...needs.keys()];
+  // Stickers created before stock tracking have no quantity yet; give them the default
+  await stickerModel.updateMany(
+    { _id: { $in: ids }, stockQuantity: { $not: { $type: "number" } } },
+    { $set: { stockQuantity: 50 } }
+  );
+
+  const taken = new Map();
+  for (const [id, qty] of needs) {
+    const result = await stickerModel.updateOne(
+      { _id: id, stockQuantity: { $gte: qty } },
+      { $inc: { stockQuantity: -qty } }
+    );
+    if (result.modifiedCount === 1) {
+      taken.set(id, qty);
+      continue;
+    }
+    const sticker = await stickerModel.findById(id).select("name stockQuantity");
+    if (!sticker && skipDeleted) continue;
+    await releaseStickerStock(taken);
+    const left = sticker?.stockQuantity || 0;
+    return {
+      ok: false,
+      message: !sticker
+        ? "A selected sticker is no longer available."
+        : left <= 0
+          ? `The sticker "${sticker.name}" is sold out.`
+          : `Only ${left} of the sticker "${sticker.name}" left, but ${qty} needed.`
+    };
+  }
+  return { ok: true, taken };
 };
 
 // Guest Order Submission with Payment Proof
@@ -120,94 +195,72 @@ const submitGuestOrder = async (req, res) => {
     const totalAmount = subtotal + deliveryFee + urgentFee;
     const prepaymentAmount = Math.min(totalAmount, (Number(settings.prepaymentPerItem) || 0) * totalQuantity);
 
-    const paymentProofFilename =
-      (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename;
-
-    let customerCoordinates = { lat: 0, lng: 0 };
-    if (req.body.customerCoordinates) {
-      try {
-        customerCoordinates = typeof req.body.customerCoordinates === "string" 
-          ? JSON.parse(req.body.customerCoordinates) 
-          : req.body.customerCoordinates;
-      } catch (e) {}
+    const stickerNeeds = stickerNeedsFromItems(items);
+    const reservation = await reserveStickerStock(stickerNeeds);
+    if (!reservation.ok) {
+      return rejectOrder(req, res, `${reservation.message} Please update your cart.`);
     }
 
-    // Auto-extract GPS coordinates if embedded in deliveryAddress (e.g. "GPS: 8.96048, 38.7106")
-    if ((!customerCoordinates?.lat || !customerCoordinates?.lng) && req.body.deliveryAddress) {
-      const match = req.body.deliveryAddress.match(/([-+]?\d{1,2}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
-      if (match) {
-        const pLat = parseFloat(match[1]);
-        const pLng = parseFloat(match[2]);
-        if (!isNaN(pLat) && !isNaN(pLng)) {
-          customerCoordinates = { lat: pLat, lng: pLng };
-        }
+    let newOrder;
+    try {
+      const paymentProofFilename =
+        (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename;
+
+      let customerCoordinates = { lat: 0, lng: 0 };
+      if (req.body.customerCoordinates) {
+        try {
+          customerCoordinates = typeof req.body.customerCoordinates === "string" 
+            ? JSON.parse(req.body.customerCoordinates) 
+            : req.body.customerCoordinates;
+        } catch (e) {}
       }
-    }
 
-    // Generate unique order number (e.g., AUR-9482)
-    const randomCode = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `AUR-${new Date().getFullYear().toString().slice(-2)}${randomCode}`;
-
-    const newOrder = new orderModel({
-      orderNumber: orderNumber,
-      customerName: req.body.customerName || "Guest Customer",
-      customerPhone: cleanPrimaryPhone,
-      secondaryPhone: cleanSecondaryPhone,
-      customerEmail: req.body.customerEmail || "",
-      deliveryType: deliveryType,
-      deliveryAddress: req.body.deliveryAddress || "",
-      customerCoordinates: customerCoordinates,
-      distanceKm: distanceKm,
-      deliveryFee: deliveryFee,
-      isUrgent: isUrgent,
-      urgentFee: urgentFee,
-      items: items,
-      subtotal: subtotal,
-      totalAmount: totalAmount,
-      prepaymentAmount: prepaymentAmount,
-      paymentMethod: req.body.paymentMethod || "Bank / Mobile Transfer",
-      paymentAccount: req.body.paymentAccount || "",
-      paymentProof: paymentProofFilename,
-      notes: req.body.notes || "",
-      deliveryDate: req.body.deliveryDate || "",
-      status: "Ordered"
-    });
-
-    if (mongoose.connection.readyState === 1) {
-      await newOrder.save();
-    } else {
-      const orderData = newOrder.toObject ? newOrder.toObject() : { ...newOrder };
-      orderData._id = `mem-${Date.now()}`;
-      orderData.createdAt = new Date();
-      orderData.updatedAt = new Date();
-      inMemoryOrders.set(orderNumber, orderData);
-    }
-
-    // Automatically decrement sticker inventory for all used stickers
-    if (items && Array.isArray(items)) {
-      for (const itm of items) {
-        const itemQty = Math.max(1, Number(itm.quantity) || 1);
-        if (itm.selectedStickers && Array.isArray(itm.selectedStickers)) {
-          for (const st of itm.selectedStickers) {
-            try {
-              let stickerDoc = null;
-              if (st.id && mongoose.Types.ObjectId.isValid(st.id)) {
-                stickerDoc = await stickerModel.findById(st.id);
-              }
-              if (!stickerDoc && st.name) {
-                stickerDoc = await stickerModel.findOne({ name: st.name });
-              }
-              if (stickerDoc) {
-                const currentStock = typeof stickerDoc.stockQuantity === "number" ? stickerDoc.stockQuantity : 50;
-                stickerDoc.stockQuantity = Math.max(0, currentStock - itemQty);
-                await stickerDoc.save();
-              }
-            } catch (stErr) {
-              console.warn("Could not decrement stock for sticker:", st.name || st.id, stErr.message);
-            }
+      // Auto-extract GPS coordinates if embedded in deliveryAddress (e.g. "GPS: 8.96048, 38.7106")
+      if ((!customerCoordinates?.lat || !customerCoordinates?.lng) && req.body.deliveryAddress) {
+        const match = req.body.deliveryAddress.match(/([-+]?\d{1,2}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+        if (match) {
+          const pLat = parseFloat(match[1]);
+          const pLng = parseFloat(match[2]);
+          if (!isNaN(pLat) && !isNaN(pLng)) {
+            customerCoordinates = { lat: pLat, lng: pLng };
           }
         }
       }
+
+      // Generate unique order number (e.g., AUR-9482)
+      const randomCode = Math.floor(1000 + Math.random() * 9000);
+      const orderNumber = `AUR-${new Date().getFullYear().toString().slice(-2)}${randomCode}`;
+
+      newOrder = new orderModel({
+        orderNumber: orderNumber,
+        customerName: req.body.customerName || "Guest Customer",
+        customerPhone: cleanPrimaryPhone,
+        secondaryPhone: cleanSecondaryPhone,
+        customerEmail: req.body.customerEmail || "",
+        deliveryType: deliveryType,
+        deliveryAddress: req.body.deliveryAddress || "",
+        customerCoordinates: customerCoordinates,
+        distanceKm: distanceKm,
+        deliveryFee: deliveryFee,
+        isUrgent: isUrgent,
+        urgentFee: urgentFee,
+        items: items,
+        subtotal: subtotal,
+        totalAmount: totalAmount,
+        prepaymentAmount: prepaymentAmount,
+        paymentMethod: req.body.paymentMethod || "Bank / Mobile Transfer",
+        paymentAccount: req.body.paymentAccount || "",
+        paymentProof: paymentProofFilename,
+        notes: req.body.notes || "",
+        deliveryDate: req.body.deliveryDate || "",
+        status: "Ordered"
+      });
+
+      await newOrder.save();
+    } catch (saveError) {
+      // The order was not stored, so give the stickers back
+      await releaseStickerStock(stickerNeeds).catch(() => {});
+      throw saveError;
     }
 
     // Trigger website push notification to admin phone & devices
@@ -232,12 +285,7 @@ const submitGuestOrder = async (req, res) => {
 // Listing orders for admin panel
 const listOrders = async (req, res) => {
   try {
-    let orders = [];
-    if (mongoose.connection.readyState === 1) {
-      orders = await orderModel.find({}).sort({ createdAt: -1 });
-    } else {
-      orders = Array.from(inMemoryOrders.values()).reverse();
-    }
+    const orders = await orderModel.find({}).sort({ createdAt: -1 });
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("Error listing orders:", error);
@@ -257,27 +305,53 @@ const updateStatus = async (req, res) => {
         message: "Invalid status. Allowed statuses: Ordered, Payment Verified, Completed, Cancelled"
       });
     }
-    if (mongoose.connection.readyState === 1) {
-      const updatedOrder = await orderModel.findByIdAndUpdate(
-        orderId,
-        { status: status },
-        { new: true }
-      );
-      if (!updatedOrder) {
-        return res.status(404).json({ success: false, message: "Order not found" });
-      }
-      return res.json({ success: true, message: "Order status updated", data: updatedOrder });
-    } else {
-      for (const [key, val] of inMemoryOrders.entries()) {
-        if (val._id === orderId || val.orderNumber === orderId) {
-          val.status = status;
-          val.updatedAt = new Date();
-          inMemoryOrders.set(key, val);
-          return res.json({ success: true, message: "Order status updated", data: val });
-        }
-      }
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const wasCancelled = order.status === "Cancelled";
+    const willBeCancelled = status === "Cancelled";
+    const stickerNeeds = stickerNeedsFromItems(order.items);
+    let updatedOrder;
+
+    if (!wasCancelled && willBeCancelled) {
+      // Cancelling returns the order's stickers to stock. The status filter makes sure
+      // a repeated request cannot return them twice.
+      updatedOrder = await orderModel.findOneAndUpdate(
+        { _id: orderId, status: { $ne: "Cancelled" } },
+        { status },
+        { new: true }
+      );
+      if (updatedOrder) await releaseStickerStock(stickerNeeds);
+    } else if (wasCancelled && !willBeCancelled) {
+      // Re-opening a cancelled order needs its stickers again
+      const reservation = await reserveStickerStock(stickerNeeds, { skipDeleted: true });
+      if (!reservation.ok) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot re-open this order. ${reservation.message}`
+        });
+      }
+      updatedOrder = await orderModel.findOneAndUpdate(
+        { _id: orderId, status: "Cancelled" },
+        { status },
+        { new: true }
+      );
+      if (!updatedOrder) await releaseStickerStock(reservation.taken);
+    } else {
+      updatedOrder = await orderModel.findByIdAndUpdate(orderId, { status }, { new: true });
+    }
+
+    // Another request changed the order first; report its current state
+    if (!updatedOrder) updatedOrder = await orderModel.findById(orderId);
+    if (!updatedOrder) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    return res.json({ success: true, message: "Order status updated", data: updatedOrder });
   } catch (error) {
     console.error("Error updating status:", error);
     res.status(500).json({ success: false, message: "Error updating status" });
@@ -306,34 +380,18 @@ const trackOrder = async (req, res) => {
       { secondaryPhone: trimmedQuery }
     ];
 
-    let phoneRegex = null;
     if (queryDigits.length >= 8) {
       // In Ethiopian numbers (+2519... / 09... / +2517... / 07...), the last 9 digits uniquely identify subscriber
       const coreDigits = queryDigits.length >= 9 ? queryDigits.slice(-9) : queryDigits;
       // Allow optional formatting like spaces, hyphens, brackets, dots
       const digitPattern = coreDigits.split("").join("[\\s\\-\\(\\)\\.]*");
-      phoneRegex = new RegExp(digitPattern, "i");
+      const phoneRegex = new RegExp(digitPattern, "i");
 
       orConditions.push({ customerPhone: { $regex: phoneRegex } });
       orConditions.push({ secondaryPhone: { $regex: phoneRegex } });
     }
 
-    let orders = [];
-
-    if (mongoose.connection.readyState === 1) {
-      orders = await orderModel.find({ $or: orConditions }).sort({ createdAt: -1, date: -1 });
-    } else {
-      const qLower = trimmedQuery.toLowerCase();
-      orders = Array.from(inMemoryOrders.values()).filter((o) => {
-        if (o.orderNumber && o.orderNumber.toLowerCase() === qLower) return true;
-        if (o.customerPhone === trimmedQuery || o.secondaryPhone === trimmedQuery) return true;
-        if (phoneRegex) {
-          if (o.customerPhone && phoneRegex.test(o.customerPhone)) return true;
-          if (o.secondaryPhone && phoneRegex.test(o.secondaryPhone)) return true;
-        }
-        return false;
-      }).sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
-    }
+    const orders = await orderModel.find({ $or: orConditions }).sort({ createdAt: -1, date: -1 });
 
     if (!orders || orders.length === 0) {
       return res.status(404).json({ success: false, message: "No orders found matching your search" });
@@ -388,7 +446,8 @@ const testPushHandler = async (req, res) => {
   }
 };
 
-export { 
+export {
+  requireDb,
   submitGuestOrder, 
   listOrders, 
   updateStatus, 

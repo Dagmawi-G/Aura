@@ -4,3 +4,9 @@ node_modules
 .env.*
 dist
 
+
+# Uploaded media (product photos, receipts) stays out of git; only seed stickers and icons are tracked
+backend/uploads/*
+!backend/uploads/sticker_*.svg
+!backend/uploads/order-normal-icon.png
+!backend/uploads/order-urgent-icon.png

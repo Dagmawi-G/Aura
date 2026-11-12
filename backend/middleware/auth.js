@@ -1,22 +1,6 @@
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
-const authMiddleware = async (req, res, next) => {
-  const token = req.headers.token || req.headers.authorization?.replace("Bearer ", "");
-  if (!token) {
-    return res.status(401).json({ success: false, message: "Not Authorized. Please login." });
-  }
-  try {
-    const token_decode = jwt.verify(token, process.env.JWT_SECRET);
-    req.body.userId = token_decode.id;
-    req.userId = token_decode.id;
-    next();
-  } catch (error) {
-    console.error("Auth error:", error);
-    res.status(401).json({ success: false, message: "Invalid or expired token" });
-  }
-};
-
 const adminAuth = async (req, res, next) => {
   const token = req.headers.token || req.headers.authorization?.replace("Bearer ", "");
   if (!token) {
@@ -42,6 +26,5 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
-export { authMiddleware, adminAuth };
-export default authMiddleware;
+export { adminAuth };
 
