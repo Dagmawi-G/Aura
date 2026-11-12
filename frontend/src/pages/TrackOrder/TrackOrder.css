@@ -233,28 +233,13 @@
 }
 
 .status-pill.pending,
-.status-pill.ordered {
-  background: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-
-.status-pill.verified {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-}
-
-.status-pill.completed {
+.status-pill.ordered,
+.status-pill.verified,
+.status-pill.completed,
+.status-pill.cancelled {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
-}
-
-.status-pill.cancelled {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
 }
 
 .track-urgent-pill {
@@ -363,23 +348,18 @@
   transition: var(--transition);
 }
 
-.step-node.completed .step-circle {
-  background: #10b981;
-  border-color: #10b981;
-}
-
-.step-node.current .step-circle {
-  background: #fffbeb;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.18);
-  transform: scale(1.06);
-}
-
+.step-node.completed .step-circle,
+.step-node.current .step-circle,
 .step-node.cancelled-active .step-circle {
-  background: #fee2e2;
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
-  transform: scale(1.06);
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.step-node.current .step-circle,
+.step-node.cancelled-active .step-circle {
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+  transform: scale(1.08);
 }
 
 .step-title {
@@ -389,14 +369,10 @@
 }
 
 .step-node.completed .step-title,
-.step-node.current .step-title {
-  color: var(--text-main);
-  font-weight: 700;
-}
-
+.step-node.current .step-title,
 .step-node.cancelled-active .step-title {
-  color: #b91c1c;
-  font-weight: 700;
+  color: #047857;
+  font-weight: 800;
 }
 
 /* ── Accordion for Full Details ── */
