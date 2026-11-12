@@ -6,7 +6,6 @@ import userRouter from "./routes/userRoute.js";
 import settingRouter from "./routes/settingRoute.js";
 import stickerRouter from "./routes/stickerRoute.js";
 import orderRouter from "./routes/orderRoute.js";
-import { ensureDefaultAdmin } from "./controllers/userController.js";
 import { startKeepAlive } from "./utils/keepAlive.js";
 import "dotenv/config";
 
@@ -19,10 +18,12 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cors());
 
-// DB connection & default super admin setup
-connectDB().then(() => {
-  ensureDefaultAdmin();
-});
+if (!process.env.JWT_SECRET) {
+  console.error("[Config Error] JWT_SECRET is not set. Admin login and every admin API call will fail until it is configured.");
+}
+
+// DB connection (create the first admin with: npm run create-admin)
+connectDB();
 
 // Health check / Keep-Alive ping endpoints (to prevent Render from sleeping)
 const handlePing = (req, res) => {

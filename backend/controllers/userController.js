@@ -5,101 +5,7 @@ import validator from "validator";
 
 // Create token helper
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || "aura_jwt_secret_key_2026", { expiresIn: "7d" });
-};
-
-// ==========================================
-// ── CUSTOMER LOGIN & REGISTRATION ─────────
-// ==========================================
-
-// Login user
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    if (!email || !password) {
-      return res.json({ success: false, message: "Email and password are required" });
-    }
-    const user = await userModel.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
-    }
-    let isMatch = false;
-    try {
-      isMatch = await bcrypt.compare(password, user.password);
-    } catch {
-      isMatch = false;
-    }
-
-    // Fallback: If password was stored plaintext, match directly and auto-upgrade to bcrypt hash
-    if (!isMatch && user.password === password) {
-      isMatch = true;
-      try {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-        await user.save();
-      } catch (err) {
-        console.error("Auto-hash error:", err);
-      }
-    }
-
-    if (!isMatch) {
-      return res.json({ success: false, message: "Invalid credentials" });
-    }
-    const role = user.role;
-    const token = createToken(user._id);
-    res.json({
-      success: true,
-      token,
-      role,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "Server error during login" });
-  }
-};
-
-// Register user
-const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-  try {
-    if (!name || !email || !password) {
-      return res.json({ success: false, message: "All fields are required" });
-    }
-    const exists = await userModel.findOne({ email: email.toLowerCase().trim() });
-    if (exists) {
-      return res.json({ success: false, message: "User already exists with this email" });
-    }
-
-    if (!validator.isEmail(email)) {
-      return res.json({ success: false, message: "Please enter a valid email address" });
-    }
-    if (password.length < 8) {
-      return res.json({ success: false, message: "Password must be at least 8 characters long" });
-    }
-
-    const salt = await bcrypt.genSalt(Number(process.env.SALT) || 10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new userModel({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      role: "user"
-    });
-
-    const user = await newUser.save();
-    const token = createToken(user._id);
-    res.json({
-      success: true,
-      token,
-      role: user.role,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
-    });
-  } catch (error) {
-    console.error("Register error:", error);
-    res.status(500).json({ success: false, message: "Server error during registration" });
-  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 // ==========================================
@@ -110,13 +16,13 @@ const registerUser = async (req, res) => {
 const adminLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
-    if (!email || !password) {
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
     const user = await userModel.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return res.status(401).json({ success: false, message: "Account not found in users table" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     let isMatch = false;
@@ -126,26 +32,13 @@ const adminLogin = async (req, res) => {
       isMatch = false;
     }
 
-    // Fallback: If password was stored plaintext, match directly and auto-upgrade to bcrypt hash
-    if (!isMatch && user.password === password) {
-      isMatch = true;
-      try {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-        await user.save();
-      } catch (err) {
-        console.error("Auto-hash error:", err);
-      }
-    }
-
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
-    // Ensure role is admin
+    // Only existing admins may sign in here; an account is never promoted by logging in
     if (user.role !== "admin") {
-      user.role = "admin";
-      await user.save();
+      return res.status(403).json({ success: false, message: "Access denied. Administrator privileges required." });
     }
 
     const token = createToken(user._id);
@@ -185,7 +78,7 @@ const listAdminAccounts = async (req, res) => {
 const createAdminAccount = async (req, res) => {
   const { name, email, password } = req.body;
   try {
-    if (!name || !email || !password) {
+    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string" || !name.trim() || !email.trim() || !password) {
       return res.status(400).json({ success: false, message: "Name, email, and password are required" });
     }
 
@@ -279,38 +172,11 @@ const deleteAdminAccount = async (req, res) => {
   }
 };
 
-// Ensure at least one default super-admin exists in the DB
-const ensureDefaultAdmin = async () => {
-  try {
-    const adminCount = await userModel.countDocuments({ role: "admin" });
-    if (adminCount === 0) {
-      const defaultEmail = "admin@aura.com";
-      const defaultPassword = "admin12345";
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(defaultPassword, salt);
-
-      const superAdmin = new userModel({
-        name: "Aura Super Admin",
-        email: defaultEmail,
-        password: hashedPassword,
-        role: "admin"
-      });
-
-      await superAdmin.save();
-      console.log(`[AUTH SEED] Initial Super Admin created: ${defaultEmail} / ${defaultPassword}`);
-    }
-  } catch (err) {
-    console.error("Error ensuring default admin:", err);
-  }
-};
 
 export {
-  loginUser,
-  registerUser,
   adminLogin,
   listAdminAccounts,
   createAdminAccount,
-  deleteAdminAccount,
-  ensureDefaultAdmin
+  deleteAdminAccount
 };
 

@@ -1,12 +1,13 @@
 import express from "express";
 import { addSticker, listStickers, updateSticker, removeSticker } from "../controllers/stickerController.js";
 import { upload } from "../middleware/multerConfig.js";
+import { adminAuth } from "../middleware/auth.js";
 
 const stickerRouter = express.Router();
 
-stickerRouter.post("/add", upload.single("image"), addSticker);
 stickerRouter.get("/list", listStickers);
-stickerRouter.post("/update", upload.single("image"), updateSticker);
-stickerRouter.post("/remove", removeSticker);
+stickerRouter.post("/add", adminAuth, upload.single("image"), addSticker);
+stickerRouter.post("/update", adminAuth, upload.single("image"), updateSticker);
+stickerRouter.post("/remove", adminAuth, removeSticker);
 
 export default stickerRouter;
