@@ -223,42 +223,6 @@
   to { transform: rotate(360deg); }
 }
 
-.login-quick-helper {
-  background: #fcf9f6;
-  border: 1px dashed #ede6df;
-  padding: 0.75rem;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.helper-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  color: #6e5e53;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.btn-quick-fill {
-  background: #fbf4ee;
-  border: 1px solid #ede6df;
-  color: #78350f;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s ease;
-  font-weight: 500;
-}
-
-.btn-quick-fill:hover {
-  background: #f5ebe0;
-  border-color: #d8cbbf;
-  color: #3d2314;
-}
 
 .login-footer-security {
   text-align: center;

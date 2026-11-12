@@ -6,7 +6,7 @@ import { StoreContext } from "../../context/StoreContext";
 
 const Login = ({ url }) => {
   const { login } = useContext(StoreContext);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,15 +16,15 @@ const Login = ({ url }) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!email.trim() || !password) {
-      setErrorMsg("Please enter both email and password.");
+    if (!username.trim() || !password) {
+      setErrorMsg("Please enter both username and password.");
       return;
     }
 
     setLoading(true);
     try {
       const res = await axios.post(`${url}/api/user/admin-login`, {
-        email: email.trim(),
+        username: username.trim(),
         password
       });
 
@@ -32,7 +32,7 @@ const Login = ({ url }) => {
         toast.success(`Welcome back, ${res.data.user?.name || "Admin"}!`);
         login(res.data.token, res.data.user);
       } else {
-        setErrorMsg(res.data.message || "Invalid email or password.");
+        setErrorMsg(res.data.message || "Invalid username or password.");
         toast.error(res.data.message || "Login failed");
       }
     } catch (err) {
@@ -43,12 +43,6 @@ const Login = ({ url }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrorMsg("");
   };
 
   return (
@@ -71,17 +65,18 @@ const Login = ({ url }) => {
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="login-field-group">
-            <label className="login-label">Admin Email Address</label>
+            <label className="login-label">Admin Username</label>
             <div className="login-input-wrap">
-              <span className="input-icon">✉️</span>
+              <span className="input-icon">👤</span>
               <input
-                type="email"
+                type="text"
                 required
                 className="login-input"
-                placeholder="admin@aura.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                placeholder="Admin"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
                 autoFocus
               />
             </div>
@@ -127,19 +122,6 @@ const Login = ({ url }) => {
             )}
           </button>
         </form>
-
-        <div className="login-quick-helper">
-          <span className="helper-label">Default Super Admin Account:</span>
-          <div className="helper-actions">
-            <button
-              type="button"
-              className="btn-quick-fill"
-              onClick={() => handleQuickFill("admin@aura.com", "admin12345")}
-            >
-              <span>🔑 Auto-Fill: <strong>admin@aura.com</strong> / <strong>admin12345</strong></span>
-            </button>
-          </div>
-        </div>
 
         <div className="login-footer-security">
           <span>🔒 256-Bit Encrypted Administrator Session</span>

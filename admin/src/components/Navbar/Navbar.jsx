@@ -129,7 +129,7 @@ const Navbar = ({ url }) => {
 
         {/* Right side user profile & logout */}
         <div className="admin-nav-user-section">
-          <div className="admin-profile-pill" title={adminUser?.email || "Admin"}>
+          <div className="admin-profile-pill" title={adminUser?.username || "Admin"}>
             <div className="nav-avatar">{initials}</div>
             <div className="nav-user-text">
               <strong className="nav-user-name">{adminUser?.name || "Admin"}</strong>
