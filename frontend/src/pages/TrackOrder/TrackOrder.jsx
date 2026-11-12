@@ -75,32 +75,36 @@ const TrackOrder = () => {
 
   const lastOrderNumber = localStorage.getItem("aura_last_order");
 
-  const handleTrack = async (searchVal) => {
+  const handleTrack = async (searchVal, silent = false) => {
     const q = (searchVal !== undefined ? searchVal : query).trim();
     if (!q) {
-      toast.error("Please enter an Order Reference ID or Phone Number");
+      if (!silent) toast.error("Please enter an Order Reference ID or Phone Number");
       return;
     }
 
-    setLoading(true);
-    setSearched(true);
+    if (!silent) {
+      setLoading(true);
+      setSearched(true);
+    }
     try {
       const res = await axios.get(`${url}/api/order/track/${encodeURIComponent(q)}`);
       if (res.data.success) {
         setOrders(res.data.data);
-      } else {
+      } else if (!silent) {
         setOrders([]);
         toast.info(res.data.message || "No orders found");
       }
     } catch (e) {
-      setOrders([]);
-      if (e.response?.status === 404) {
-        toast.info("No matching orders found. Please verify your reference ID or phone number.");
-      } else {
-        toast.error("Error looking up order status");
+      if (!silent) {
+        setOrders([]);
+        if (e.response?.status === 404) {
+          toast.info("No matching orders found. Please verify your reference ID or phone number.");
+        } else {
+          toast.error("Error looking up order status");
+        }
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -111,6 +115,15 @@ const TrackOrder = () => {
       handleTrack(targetQuery);
     }
   }, [searchParams]);
+
+  // Live poll order status every 8 seconds while viewing a tracked order
+  useEffect(() => {
+    if (!searched || !query.trim()) return;
+    const interval = setInterval(() => {
+      handleTrack(query, true);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [searched, query, url]);
 
   const normalizeStatus = (status) => {
     if (!status || status === "Pending Verification") return "Ordered";
@@ -273,31 +286,36 @@ const TrackOrder = () => {
                 </div>
 
                 {/* Progress Tracker Stepper */}
-                {order.status === "Cancelled" ? (
+                <div className="stepper-progress-wrap">
+                  <div className="stepper-steps four-steps">
+                    {[
+                      { title: "Ordered", icon: "🛍️" },
+                      { title: "Payment Verified", icon: "💳" },
+                      { title: "Completed", icon: "🎉" },
+                      { title: "Cancelled", icon: "❌", isCancelStep: true }
+                    ].map((step, idx) => {
+                      const isOrderCancelled = normalizeStatus(order.status) === "Cancelled";
+                      const isCancelledNodeActive = step.isCancelStep && isOrderCancelled;
+                      const isDone = !step.isCancelStep && !isOrderCancelled && idx <= stepIdx;
+                      const isCurrent = step.isCancelStep
+                        ? isOrderCancelled
+                        : !isOrderCancelled && idx === stepIdx;
+                      return (
+                        <div
+                          key={idx}
+                          className={`step-node ${isDone ? "completed" : ""} ${isCurrent ? "current" : ""} ${isCancelledNodeActive ? "cancelled-active" : ""}`}
+                        >
+                          <div className="step-circle">{step.icon}</div>
+                          <span className="step-title">{step.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {normalizeStatus(order.status) === "Cancelled" && (
                   <div className="track-cancelled-notice">
                     <span>❌ This order was cancelled. Please contact support for inquiries.</span>
-                  </div>
-                ) : (
-                  <div className="stepper-progress-wrap">
-                    <div className="stepper-steps three-steps">
-                      {[
-                        { title: "Ordered", icon: "🛍️" },
-                        { title: "Payment Verified", icon: "💳" },
-                        { title: "Completed", icon: "🎉" }
-                      ].map((step, idx) => {
-                        const isDone = idx <= stepIdx;
-                        const isCurrent = idx === stepIdx;
-                        return (
-                          <div
-                            key={idx}
-                            className={`step-node ${isDone ? "completed" : ""} ${isCurrent ? "current" : ""}`}
-                          >
-                            <div className="step-circle">{step.icon}</div>
-                            <span className="step-title">{step.title}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
                 )}
 

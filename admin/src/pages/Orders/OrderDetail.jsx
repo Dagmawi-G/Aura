@@ -451,6 +451,35 @@ const OrderDetail = ({ url }) => {
                 <p>⚠️ No payment screenshot attached</p>
               </div>
             )}
+
+            {/* Direct Payment Verification Action */}
+            <div className="proof-verify-action-bar" style={{ marginTop: "0.9rem" }}>
+              {normalizeStatus(order.status) === "Ordered" ? (
+                <button
+                  type="button"
+                  className="btn-verify-success"
+                  onClick={() => handleStatusChange("Payment Verified")}
+                  disabled={updatingStatus}
+                >
+                  ✅ Mark Payment Verified
+                </button>
+              ) : normalizeStatus(order.status) === "Payment Verified" || normalizeStatus(order.status) === "Completed" ? (
+                <div
+                  style={{
+                    padding: "0.55rem 0.85rem",
+                    borderRadius: "8px",
+                    background: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                    color: "#065f46",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    textAlign: "center",
+                  }}
+                >
+                  💳 Payment Verified
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 

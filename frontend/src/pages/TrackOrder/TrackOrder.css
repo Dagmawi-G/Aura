@@ -336,6 +336,10 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
+.stepper-steps.four-steps {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .step-node {
   display: flex;
   flex-direction: column;
@@ -371,6 +375,13 @@
   transform: scale(1.06);
 }
 
+.step-node.cancelled-active .step-circle {
+  background: #fee2e2;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+  transform: scale(1.06);
+}
+
 .step-title {
   font-size: 0.68rem;
   font-weight: 600;
@@ -380,6 +391,11 @@
 .step-node.completed .step-title,
 .step-node.current .step-title {
   color: var(--text-main);
+  font-weight: 700;
+}
+
+.step-node.cancelled-active .step-title {
+  color: #b91c1c;
   font-weight: 700;
 }
 
@@ -571,6 +587,9 @@
   }
   .stepper-steps.three-steps {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .stepper-steps.four-steps {
+    grid-template-columns: repeat(4, 1fr);
   }
   .step-node {
     gap: 0.2rem;
