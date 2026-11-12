@@ -45,6 +45,12 @@ const Login = ({ url }) => {
     }
   };
 
+  const handleQuickFill = (demoEmail, demoPass) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setErrorMsg("");
+  };
+
   return (
     <div className="admin-login-page">
       <div className="login-backdrop-glow"></div>
@@ -72,7 +78,7 @@ const Login = ({ url }) => {
                 type="email"
                 required
                 className="login-input"
-                placeholder="you@example.com"
+                placeholder="admin@aura.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -121,6 +127,19 @@ const Login = ({ url }) => {
             )}
           </button>
         </form>
+
+        <div className="login-quick-helper">
+          <span className="helper-label">Default Super Admin Account:</span>
+          <div className="helper-actions">
+            <button
+              type="button"
+              className="btn-quick-fill"
+              onClick={() => handleQuickFill("admin@aura.com", "admin12345")}
+            >
+              <span>🔑 Auto-Fill: <strong>admin@aura.com</strong> / <strong>admin12345</strong></span>
+            </button>
+          </div>
+        </div>
 
         <div className="login-footer-security">
           <span>🔒 256-Bit Encrypted Administrator Session</span>

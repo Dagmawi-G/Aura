@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  loginUser,
+  registerUser,
   adminLogin,
   listAdminAccounts,
   createAdminAccount,
@@ -8,6 +10,10 @@ import {
 import { adminAuth } from "../middleware/auth.js";
 
 const userRouter = express.Router();
+
+// Customer auth
+userRouter.post("/register", registerUser);
+userRouter.post("/login", loginUser);
 
 // Admin auth & team management
 userRouter.post("/admin-login", adminLogin);

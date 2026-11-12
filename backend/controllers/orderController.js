@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 import orderModel from "../models/orderModel.js";
 import stickerModel from "../models/stickerModel.js";
-import foodModel from "../models/foodModel.js";
-import settingModel from "../models/settingModel.js";
-import fs from "fs";
 import { notifyAdminsOfOrder, getVapidPublicKey, savePushSubscription } from "../services/pushService.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
 
@@ -13,115 +10,37 @@ const inMemoryOrders = new Map();
 // Phone number format: 9 digits after 0, 251, or +251
 const ETHIOPIAN_PHONE_REGEX = /^(?:\+251|251|0)\d{9}$/;
 
-const MAX_ITEM_QUANTITY = 1000;
-
-// Reject an order and discard the screenshot multer already saved for it
-const rejectOrder = (req, res, message) => {
-  if (req.file?.path) {
-    fs.unlink(req.file.path, () => {});
-  }
-  return res.status(400).json({ success: false, message });
-};
-
-// Same 4 tiers the storefront shows (<5km, 5-10km, 10-15km, >15km)
-const computeDeliveryFee = (distanceKm, tiers = {}) => {
-  if (distanceKm <= 0) return 0;
-  if (distanceKm < 5) return Number(tiers.under5) || 0;
-  if (distanceKm < 10) return Number(tiers.between5and10) || 0;
-  if (distanceKm <= 15) return Number(tiers.between10and15) || 0;
-  return Number(tiers.over15) || 0;
-};
-
-// Turn the client's cart into order items using catalog names, prices and images from the database
-const buildPricedItems = async (rawItems) => {
-  let clientItems = rawItems;
-  if (typeof rawItems === "string") {
-    try {
-      clientItems = JSON.parse(rawItems);
-    } catch (e) {
-      clientItems = null;
-    }
-  }
-  if (!Array.isArray(clientItems) || clientItems.length === 0) {
-    return { error: "Your cart is empty. Please add at least one item." };
-  }
-
-  const ids = clientItems.map((itm) => itm?.foodId);
-  if (ids.some((id) => !id || !mongoose.Types.ObjectId.isValid(id))) {
-    return { error: "Your cart contains an item we could not recognise. Please re-add it." };
-  }
-  const products = await foodModel.find({ _id: { $in: ids } });
-  const productById = new Map(products.map((p) => [String(p._id), p]));
-
-  const items = [];
-  for (const itm of clientItems) {
-    const product = productById.get(String(itm.foodId));
-    if (!product) {
-      return { error: `"${itm.name || "An item"}" is no longer available. Please remove it from your cart.` };
-    }
-    const quantity = Number(itm.quantity);
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_ITEM_QUANTITY) {
-      return { error: `Invalid quantity for "${product.name}".` };
-    }
-    const stickers = Array.isArray(itm.selectedStickers) ? itm.selectedStickers : [];
-    items.push({
-      foodId: String(product._id),
-      name: product.name,
-      price: product.price,
-      quantity,
-      image: product.image,
-      customText: String(itm.customText || ""),
-      selectedStickers: stickers.map((st) => ({
-        id: st?.id || st?._id,
-        name: st?.name,
-        image: st?.image
-      }))
-    });
-  }
-  return { items };
-};
-
 // Guest Order Submission with Payment Proof
 const submitGuestOrder = async (req, res) => {
   try {
     const cleanPrimaryPhone = String(req.body.customerPhone || "").trim().replace(/[\s-]/g, "");
     if (!ETHIOPIAN_PHONE_REGEX.test(cleanPrimaryPhone)) {
-      return rejectOrder(req, res, "Primary phone number must have 9 digits after 0, 251, or +251");
+      return res.status(400).json({
+        success: false,
+        message: "Primary phone number must have 9 digits after 0, 251, or +251"
+      });
     }
 
     const cleanSecondaryPhone = String(req.body.secondaryPhone || "").trim().replace(/[\s-]/g, "");
     if (cleanSecondaryPhone && !ETHIOPIAN_PHONE_REGEX.test(cleanSecondaryPhone)) {
-      return rejectOrder(req, res, "Additional phone number must have 9 digits after 0, 251, or +251");
-    }
-
-    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Please upload your transfer screenshot (Proof of Payment)"
+        message: "Additional phone number must have 9 digits after 0, 251, or +251"
       });
     }
 
-    const deliveryType = req.body.deliveryType === "Pickup" ? "Pickup" : "Delivery";
-    const isUrgent = req.body.isUrgent === "true" || req.body.isUrgent === true;
+    const paymentProofFilename = req.file
+      ? (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename
+      : "";
 
-    // Rebuild items and every amount from the database; client-sent prices and totals are ignored
-    const priced = await buildPricedItems(req.body.items);
-    if (priced.error) {
-      return rejectOrder(req, res, priced.error);
+    let items = [];
+    if (req.body.items) {
+      try {
+        items = typeof req.body.items === "string" ? JSON.parse(req.body.items) : req.body.items;
+      } catch (e) {
+        items = [];
+      }
     }
-    const items = priced.items;
-
-    const settings = (await settingModel.findOne({})) || new settingModel();
-    const distanceKm = Math.max(0, Number(req.body.distanceKm) || 0);
-    const subtotal = items.reduce((sum, itm) => sum + itm.price * itm.quantity, 0);
-    const totalQuantity = items.reduce((sum, itm) => sum + itm.quantity, 0);
-    const deliveryFee = deliveryType === "Pickup" ? 0 : computeDeliveryFee(distanceKm, settings.deliveryTiers);
-    const urgentFee = isUrgent ? Number(settings.urgentFee) || 0 : 0;
-    const totalAmount = subtotal + deliveryFee + urgentFee;
-    const prepaymentAmount = Math.min(totalAmount, (Number(settings.prepaymentPerItem) || 0) * totalQuantity);
-
-    const paymentProofFilename =
-      (await uploadToCloudinary(req.file.path, "aura/receipts")) || req.file.filename;
 
     let customerCoordinates = { lat: 0, lng: 0 };
     if (req.body.customerCoordinates) {
@@ -154,23 +73,23 @@ const submitGuestOrder = async (req, res) => {
       customerPhone: cleanPrimaryPhone,
       secondaryPhone: cleanSecondaryPhone,
       customerEmail: req.body.customerEmail || "",
-      deliveryType: deliveryType,
+      deliveryType: req.body.deliveryType || "Delivery",
       deliveryAddress: req.body.deliveryAddress || "",
       customerCoordinates: customerCoordinates,
-      distanceKm: distanceKm,
-      deliveryFee: deliveryFee,
-      isUrgent: isUrgent,
-      urgentFee: urgentFee,
+      distanceKm: Number(req.body.distanceKm) || 0,
+      deliveryFee: Number(req.body.deliveryFee) || 0,
+      isUrgent: req.body.isUrgent === "true" || req.body.isUrgent === true,
+      urgentFee: Number(req.body.urgentFee) || 0,
       items: items,
-      subtotal: subtotal,
-      totalAmount: totalAmount,
-      prepaymentAmount: prepaymentAmount,
+      subtotal: Number(req.body.subtotal) || 0,
+      totalAmount: Number(req.body.totalAmount) || 0,
+      prepaymentAmount: Number(req.body.prepaymentAmount) || 0,
       paymentMethod: req.body.paymentMethod || "Bank / Mobile Transfer",
       paymentAccount: req.body.paymentAccount || "",
       paymentProof: paymentProofFilename,
       notes: req.body.notes || "",
       deliveryDate: req.body.deliveryDate || "",
-      status: "Ordered"
+      status: req.body.status || "Ordered"
     });
 
     if (mongoose.connection.readyState === 1) {

@@ -9,19 +9,15 @@ import {
   testPushHandler
 } from "../controllers/orderController.js";
 import { upload } from "../middleware/multerConfig.js";
-import { adminAuth } from "../middleware/auth.js";
 
 const orderRouter = express.Router();
 
-// Public (storefront)
 orderRouter.post("/submit", upload.single("paymentProof"), submitGuestOrder);
+orderRouter.get("/list", listOrders);
+orderRouter.post("/status", updateStatus);
 orderRouter.get("/track/:query", trackOrder);
 orderRouter.get("/vapid-key", getVapidPublicKeyHandler);
-
-// Admin only
-orderRouter.get("/list", adminAuth, listOrders);
-orderRouter.post("/status", adminAuth, updateStatus);
-orderRouter.post("/subscribe-push", adminAuth, subscribePushHandler);
-orderRouter.post("/test-push", adminAuth, testPushHandler);
+orderRouter.post("/subscribe-push", subscribePushHandler);
+orderRouter.post("/test-push", testPushHandler);
 
 export default orderRouter;

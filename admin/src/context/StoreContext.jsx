@@ -3,40 +3,11 @@ import axios from "axios";
 
 export const StoreContext = createContext(null);
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-const getStoredToken = () =>
-  localStorage.getItem("aura_admin_token") || localStorage.getItem("token") || "";
-
-// Attach the admin token to every request sent to our own backend (never to third parties)
-axios.interceptors.request.use((config) => {
-  const storedToken = getStoredToken();
-  if (storedToken && config.url && config.url.startsWith(BACKEND_URL)) {
-    config.headers.Authorization = `Bearer ${storedToken}`;
-  }
-  return config;
-});
-
 const StoreContextProvider = (props) => {
-  const url = BACKEND_URL;
-  const [token, setToken] = useState(getStoredToken);
-
-  // Sign out when the backend rejects the session (expired token or admin rights removed)
-  useEffect(() => {
-    const interceptorId = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        const status = error.response?.status;
-        const reqUrl = error.config?.url || "";
-        const isBackendCall = reqUrl.startsWith(BACKEND_URL);
-        const isLoginCall = reqUrl.includes("/api/user/admin-login");
-        if (isBackendCall && !isLoginCall && (status === 401 || status === 403)) {
-          logout();
-        }
-        return Promise.reject(error);
-      }
-    );
-    return () => axios.interceptors.response.eject(interceptorId);
-  }, []);
+  const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("aura_admin_token") || localStorage.getItem("token") || "";
+  });
 
   useEffect(() => {
     // Keep Render backend awake while admin dashboard is open
